@@ -195,21 +195,25 @@ class Reception(System):
 
     def schedule(self):
         while True:
-            if self.queue.is_empty():
-                # None when queue is empty
-                idle_timeout = self._idle()
-                self.idle_proc = self.env.process(idle_timeout)
-                yield self.idle_proc
-            else:
+            # There's a message
+            if not self.queue.is_empty():
                 count = self.available_servers.count
                 cap = self.available_servers.capacity
                 if count < cap:
+                    # There's a server
                     req = self.available_servers.request()
                     visitor = self.find_visitor()
                     yield req
-                    yield self.env.process(self.serve(visitor=visitor, req=req))
+                    self.env.process(self.serve(visitor=visitor, req=req))
                 else:
-                    print("No server available")
+                    print("No servers available, timeout 1s")
+                    yield self.env.timeout(1)
+            else:
+                print("No message available, go idle")
+                idle_timeout = self._idle()
+                self.idle_proc = self.env.process(idle_timeout)
+                yield self.idle_proc
+            
 
     def _idle(self):
         try:
