@@ -186,6 +186,8 @@ class Reception(System):
         )
         yield from server.process(visitor=visitor)
         self.available_servers.release(request=req)
+        if not self.idle_proc.triggered:
+            self.idle_proc.interrupt()
         
 
     def add_visitor(self, visitor: Visitor):
@@ -205,14 +207,12 @@ class Reception(System):
                     visitor = self.find_visitor()
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
-                else:
-                    print("No servers available, timeout 1s")
-                    yield self.env.timeout(1)
-            else:
-                print("No message available, go idle")
-                idle_timeout = self._idle()
-                self.idle_proc = self.env.process(idle_timeout)
-                yield self.idle_proc
+                    continue
+            print("No message or servers available, go idle")
+            idle_timeout = self._idle()
+            self.idle_proc = self.env.process(idle_timeout)
+            yield self.idle_proc
+                
             
 
     def _idle(self):
