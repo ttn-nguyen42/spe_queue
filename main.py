@@ -158,9 +158,6 @@ class ReceptionServer(VisitorServer):
 
     def process(self, visitor: Visitor):
         print(f"ReceptionServer received visitor {visitor.name}")
-        return self._do(visitor=visitor)
-
-    def _do(self, visitor: Visitor):
         service_time = max(1, np.random.exponential(
             self.params.mean_service_time))
         print(
@@ -182,12 +179,14 @@ class Reception(System):
     ) -> None:
         super().__init__(env, params, queue_params, server_params)
 
-    def serve(self, visitor: Visitor):
+    def serve(self, visitor: Visitor, req: sp.Resource):
         server = ReceptionServer(
             env=self.env,
             params=self.server_params,
         )
-        self.env.process(server.process(visitor=visitor))
+        yield from server.process(visitor=visitor)
+        self.available_servers.release(request=req)
+        
 
     def add_visitor(self, visitor: Visitor):
         self.queue.enqueue(visitor=visitor)
@@ -196,8 +195,7 @@ class Reception(System):
 
     def schedule(self):
         while True:
-            visitor = self.find_visitor()
-            if visitor is None:
+            if self.queue.is_empty():
                 # None when queue is empty
                 idle_timeout = self._idle()
                 self.idle_proc = self.env.process(idle_timeout)
@@ -206,11 +204,10 @@ class Reception(System):
                 count = self.available_servers.count
                 cap = self.available_servers.capacity
                 if count < cap:
-                    server = self.available_servers.request()
-                    print(self.available_servers.count)
-                    yield server
-                    self.serve(visitor=visitor)
-                    self.available_servers.release(request=server)
+                    req = self.available_servers.request()
+                    visitor = self.find_visitor()
+                    yield req
+                    yield self.env.process(self.serve(visitor=visitor, req=req))
                 else:
                     print("No server available")
 
@@ -274,4 +271,4 @@ if __name__ == "__main__":
 
     reception.run()
     gen.run()
-    env.run(until=20)
+    env.run(until=SIM_DURATION)
