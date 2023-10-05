@@ -5,6 +5,7 @@ from visitor import Visitor
 from systems import System, Reception, Room, Hallway
 from typing import List
 import uuid
+from prettytable import PrettyTable
 
 
 class Generator:
@@ -69,11 +70,12 @@ class Museum:
             ),
             reception=self.reception,
         )
-      
+
     # MMN0208: Add close function
     def close(self):
         yield self.env.timeout(pr.SIM_DURATION)
-        print(f"------------------------\nSimulation end at {self.env.now}\n------------------------")
+        print(
+            f"------------------------\nSimulation end at {self.env.now}\n------------------------")
         self.hallway.idle_proc.interrupt()
         self.reception.idle_proc.interrupt()
         for r in self.rooms:
@@ -84,7 +86,7 @@ class Museum:
         self._start_rooms()
         self.hallway.run()
         self.reception.run()
-        # self.generator.run()
+        self.generator.run()
         proc = self.env.process(self.close())
         self.env.run(until=proc)
         self.stats()
@@ -111,11 +113,14 @@ class Museum:
     def stats(self):
         # Should be able to save these to a file
         print("#############")
-        print("Statistics:")
-        print(self.reception.get_stats())
-        print(self.hallway.get_stats())
+        tb = PrettyTable(["system_name", "avg_idle_time",
+                         "avg_service_time", "avg_wait_time"])
+        tb.add_row(self.reception.get_stats().list_stats())
+        tb.add_row(self.hallway.get_stats().list_stats())
         for r in self.rooms:
-            print(r.get_stats())
+            tb.add_row(r.get_stats().list_stats())
+        tb.align["system_name"] = "l"
+        print(tb)
 
 
 if __name__ == "__main__":
