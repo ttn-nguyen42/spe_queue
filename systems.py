@@ -3,6 +3,7 @@ import params as pr
 from visitor import Visitor
 from qs import Queue
 from servers import ReceptionServer, RoomServer
+from system_stats import SystemStatistics
 
 
 class System:
@@ -23,7 +24,11 @@ class System:
         self.queue = Queue(params=queue_params)
         self.available_servers = sp.Resource(
             self.env, capacity=params.max_servers)
+        self.stats = SystemStatistics(system_name=self.params.name)
         pass
+
+    def get_stats(self) -> SystemStatistics:
+        return self.stats
 
     def add_visitor(self, visitor: Visitor):
         self.queue.enqueue(visitor=visitor)
