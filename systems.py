@@ -2,7 +2,7 @@ import simpy as sp
 import params as pr
 from visitor import Visitor
 from qs import Queue
-from servers import ReceptionServer
+from servers import ReceptionServer, RoomServer
 
 
 class System:
@@ -34,7 +34,18 @@ class System:
         except Exception:
             return None
 
-    def serve(self, visitor: Visitor):
+    def is_empty(self) -> bool:
+        return self.queue.is_empty()
+
+    def is_full(self) -> bool:
+        return self.queue.is_full()
+
+    def is_available(self) -> bool:
+        cap = self.available_servers.capacity
+        in_use = self.available_servers.count
+        return in_use < cap
+
+    def serve(self, visitor: Visitor, req: sp.Resource):
         pass
 
     def schedule(self):
@@ -47,9 +58,18 @@ class Reception(System):
             env: sp.Environment,
             params: pr.SystemParams,
             queue_params: pr.QueueParams,
-            server_params: pr.ServerParams
+            server_params: pr.ServerParams,
+            rooms: list[System] = None,
     ) -> None:
+        self.rooms = rooms
         super().__init__(env, params, queue_params, server_params)
+
+    def set_rooms(self, rooms: list[System]):
+        self.rooms = rooms
+        return self
+
+    def get_name(self) -> str:
+        return self.params.name
 
     def serve(self, visitor: Visitor, req: sp.Resource):
         server = ReceptionServer(
@@ -57,44 +77,180 @@ class Reception(System):
             params=self.server_params,
         )
         yield from server.process(visitor=visitor)
+        # Move from reception to a random room
+        self._move_to_room(visitor=visitor)
         self.available_servers.release(request=req)
         if not self.idle_proc.triggered:
             self.idle_proc.interrupt()
 
     def add_visitor(self, visitor: Visitor):
-        self.queue.enqueue(visitor=visitor)
+        super().add_visitor(visitor=visitor)
         if not self.idle_proc.triggered:
             self.idle_proc.interrupt()
 
     def schedule(self):
         while True:
             # There's a message
-            if not self.queue.is_empty():
-                count = self.available_servers.count
-                cap = self.available_servers.capacity
-                if count < cap:
+            if not self.is_empty():
+                if self.is_available():
                     # There's a server
                     req = self.available_servers.request()
                     visitor = self.find_visitor()
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
                     continue
-            print("No message or servers available, go idle")
+                else:
+                    print("Reception NO_SERVER start idle")
+            else:
+                print("Reception NO_VISITOR start idle")
             idle_timeout = self._idle()
             self.idle_proc = self.env.process(idle_timeout)
             yield self.idle_proc
 
     def _idle(self):
         try:
-            print(f"Reception is idling at {self.env.now}")
+            print(f"Reception IDLE start = {self.env.now}")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            print(f"Reception now working")
+            print(f"Reception IDLE end = {self.env.now}")
 
-    def _run_idle(self):
-        idle_timeout = self._idle()
-        self.idle_proc = self.env.process(idle_timeout)
-        yield self.idle_proc
+    # Move visitor to room
+    def _move_to_room(self, visitor: Visitor):
+        print(f"Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
+
+        # Choose a random room to move visitor to
+        # self.rooms
+        # Room name: self.rooms[i].get_name()
+        return
+
+    def run(self):
+        self.env.process(self.schedule())
+
+
+class Room(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: pr.SystemParams,
+            queue_params: pr.QueueParams,
+            server_params: pr.ServerParams,
+            hallway: System = None) -> None:
+        self.hallway = hallway
+        super().__init__(env, params, queue_params, server_params)
+
+    def set_hallway(self, hallway: System):
+        self.hallway = hallway
+        return self
+
+    def add_visitor(self, visitor: Visitor):
+        super().add_visitor(visitor=visitor)
+        if not self.idle_proc.triggered:
+            self.idle_proc.interrupt()
+
+    def get_name(self) -> str:
+        return self.params.name
+
+    # Serve visitor for visting the room
+    def serve(self, visitor: Visitor, req: sp.Resource):
+        server = RoomServer(
+            env=self.env,
+            params=self.server_params,
+        )
+        yield from server.process(visitor=visitor)
+        # Move to a hallway
+        self._move_to_hallway(visitor=visitor)
+        self.available_servers.release(request=req)
+
+    # Moves visitor to hallway
+    def schedule(self):
+        while True:
+            if not self.is_empty():
+                if self.is_available():
+                    req = self.available_servers.request()
+                    visitor = self.find_visitor()
+                    yield req
+                    self.env.process(self.serve(visitor=visitor, req=req))
+                    continue
+                else:
+                    print("Room NO_SERVER start idle")
+            else:
+                print("Room NO_VISITOR start idle")
+            idle_timeout = self._idle()
+            self.idle_proc = self.env.process(idle_timeout)
+            yield self.idle_proc
+
+    def _idle(self):
+        try:
+            print(f"Room IDLE start = {self.env.now}")
+            yield self.env.timeout(pr.SIM_DURATION)
+        except sp.Interrupt:
+            print(f"Reception IDLE end = {self.env.now}")
+
+    def _move_to_hallway(self, visitor: Visitor):
+        print(f"Room TO_HALLWAY visitor = {visitor.get_name()}")
+        # Add this room to list of visited place of visitor
+        # Move visitor to hallway
+        # self.hallway
+        # This room name: self.get_name()
+
+    def run(self):
+        self.env.process(self.schedule())
+
+
+class Hallway(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: pr.SystemParams,
+            queue_params: pr.QueueParams,
+            server_params: pr.ServerParams,
+            rooms: list[Room] = None) -> None:
+        self.rooms = rooms
+        super().__init__(env, params, queue_params, server_params)
+
+    def set_rooms(self, rooms: list[Room]):
+        self.rooms = rooms
+        return self
+
+    def get_name(self) -> str:
+        return self.params.name
+
+    def add_visitor(self, visitor: Visitor):
+        super().add_visitor(visitor=visitor)
+        if not self.idle_proc.triggered:
+            self.idle_proc.interrupt()
+
+    # Should be doing nothing
+    def serve(self, visitor: Visitor, req: sp.Resource):
+        return
+
+    # Moves its visitor to rooms
+    def schedule(self):
+        while True:
+            if not self.is_empty():
+                visitor = self.find_visitor()
+                where = self._find_unvisited_room(visitor=visitor)
+                room = self.rooms[where]
+                # Add visitor to that room
+                continue
+            else:
+                print("Hallway NO_VISITOR start idle")
+            idle_timeout = self._idle()
+            self.idle_proc = self.env.process(idle_timeout)
+            yield self.idle_proc
+
+    def _idle(self):
+        try:
+            print(f"Hallway IDLE start = {self.env.now}")
+            yield self.env.timeout(pr.SIM_DURATION)
+        except sp.Interrupt:
+            print(f"Hallway IDLE end = {self.env.now}")
+
+    def _find_unvisited_room(self, visitor: Visitor) -> int:
+        # Find unvisited room and returns an index
+        # self.rooms
+        # This hallway name: self.get_name()
+        return 0
 
     def run(self):
         self.env.process(self.schedule())
