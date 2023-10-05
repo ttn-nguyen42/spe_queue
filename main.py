@@ -76,6 +76,7 @@ class Museum:
         self.reception.run()
         self.generator.run()
         self.env.run(until=pr.SIM_DURATION)
+        self.stats()
 
     def _generate_rooms(self, hallway: Hallway, amount: int = 1) -> List[Room]:
         i = 0
@@ -95,6 +96,15 @@ class Museum:
         i = 0
         for r in self.rooms:
             r.run()
+
+    def stats(self):
+        # Should be able to save these to a file
+        print("#############")
+        print("Statistics:")
+        print(self.reception.get_stats())
+        print(self.hallway.get_stats())
+        for r in self.rooms:
+            print(r.get_stats())
 
 
 if __name__ == "__main__":

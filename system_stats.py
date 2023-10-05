@@ -3,10 +3,10 @@ class SystemStatistics:
         self.system_name = system_name
 
         self.total_idle_time: float = 0.0
-        self.total_idle_count: int = 0.0
+        self.total_idle_count: int = 1
 
         self.total_service_time: float = 0.0
-        self.total_service_requests: int = 0
+        self.total_service_requests: int = 1
         pass
 
     def __str__(self) -> str:
