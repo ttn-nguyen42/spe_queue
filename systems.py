@@ -117,12 +117,15 @@ class Reception(System):
             # MMN0208: update idle_start, total_idle_count
             self.stats.update_idle_count()
             idle_start = self.env.now
-            print(f"Reception IDLE start = {idle_start}")
+            print(f"Reception IDLE start at {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
+            sim_end = self.env.now
+            print(f"Simulation end at {sim_end}, Reception IDLE end")
+            self.stats.update_idle_time(idle_time=sim_end - idle_start)
         except sp.Interrupt:
             # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
-            print(f"Reception IDLE end = {idle_end}")
+            print(f"Reception IDLE end at {idle_end}")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     # Move visitor to room
@@ -195,12 +198,15 @@ class Room(System):
             # update idle_start, total_idle_count
             self.stats.update_idle_count()
             idle_start = self.env.now
-            print(f"Room IDLE start = {idle_start}")
+            print(f"Room IDLE start at {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
+            sim_end = self.env.now
+            print(f"Simulation end at {sim_end}, Room IDLE end")
+            self.stats.update_idle_time(idle_time=sim_end - idle_start)
         except sp.Interrupt:
             # update idle_end, total_idle_time
             idle_end = self.env.now
-            print(f"Room IDLE end = {idle_end}")
+            print(f"Room IDLE end at {idle_end}")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _move_to_hallway(self, visitor: Visitor):
@@ -261,12 +267,15 @@ class Hallway(System):
             # MMN0208: update idle_start, total_idle_count
             self.stats.update_idle_count()
             idle_start = self.env.now
-            print(f"Hallway IDLE start = {idle_start}")
+            print(f"Hallway IDLE start at {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
+            sim_end = self.env.now
+            print(f"Simulation end at {sim_end}, Hallway IDLE end")
+            self.stats.update_idle_time(idle_time=sim_end - idle_start)
         except sp.Interrupt:
             # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
-            print(f"Hallway IDLE end = {idle_end}")
+            print(f"Hallway IDLE end at {idle_end}")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _find_unvisited_room(self, visitor: Visitor) -> int:
