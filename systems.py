@@ -4,7 +4,7 @@ from visitor import Visitor
 from qs import Queue
 from servers import ReceptionServer, RoomServer
 from system_stats import SystemStatistics
-
+import random
 
 class System:
     """
@@ -128,10 +128,11 @@ class Reception(System):
     # Move visitor to room
     def _move_to_room(self, visitor: Visitor):
         print(f"Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
-
         # Choose a random room to move visitor to
         # self.rooms
         # Room name: self.rooms[i].get_name()
+        room = random.randint(1,4) 
+        Room.add_visitor(room,visitor)
         return
 
     def run(self):
@@ -211,7 +212,9 @@ class Room(System):
         # Move visitor to hallway
         # self.hallway
         # This room name: self.get_name()
-
+        # visitor.visited(room) //Not sure should have this or not?
+        visitor.visited(Room.get_name) # Fix it later.
+        Hallway.add_visitor(self.hallway,visitor)
     def run(self):
         self.env.process(self.schedule())
 
