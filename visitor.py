@@ -1,7 +1,7 @@
 from typing import List
 
 
-class Statistics:
+class VisitorStatistics:
     def __init__(self) -> None:
         self.wait_time: float = 0.0
         self.service_time: float = 0.0
@@ -26,7 +26,7 @@ class Statistics:
 
 
 class Entry:
-    def __init__(self, id: str, stats: Statistics) -> None:
+    def __init__(self, id: str, stats: VisitorStatistics) -> None:
         self.id = id
         self.stats = stats
         pass
@@ -46,7 +46,7 @@ class Visitor:
 
     def visited(self, queue_id: str):
         self.queues_visited.append(
-            Entry(id=queue_id, stats=Statistics()),
+            Entry(id=queue_id, stats=VisitorStatistics()),
         )
 
     def has_visited(self, queue_id: str):
