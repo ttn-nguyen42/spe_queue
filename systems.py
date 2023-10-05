@@ -115,7 +115,6 @@ class Reception(System):
     def _idle(self):
         try:
             # MMN0208: update idle_start, total_idle_count
-            self.stats.update_idle_count()
             idle_start = self.env.now
             print(f"Reception IDLE start at {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
@@ -192,13 +191,12 @@ class Room(System):
 
     def _idle(self):
         try:
-            # update idle_start, total_idle_count
-            self.stats.update_idle_count()
+            # MMN0208: update idle_start
             idle_start = self.env.now
             print(f"Room IDLE start at {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            # update idle_end, total_idle_time
+            # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
             print(f"Room IDLE end at {idle_end}")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
@@ -259,7 +257,6 @@ class Hallway(System):
     def _idle(self):
         try:
             # MMN0208: update idle_start, total_idle_count
-            self.stats.update_idle_count()
             idle_start = self.env.now
             print(f"Hallway IDLE start at {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
