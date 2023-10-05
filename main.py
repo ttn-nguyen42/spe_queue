@@ -1,241 +1,15 @@
 import simpy as sp
 import numpy as np
-from typing import List
-
-SIM_DURATION = 20
-
-
-class Visitor(object):
-
-    def __init__(self, name: str) -> None:
-        self.name = name
-        self.queues_visited = []
-
-    def __str__(self) -> str:
-        return f"name={self.name} visited={self.queues_visited}"
-
-    def visited(self, queue_id: str):
-        self.queues_visited.append(queue_id)
-
-    def has_visited(self, queue_id: str):
-        for q in self.queues_visited:
-            if q == queue_id:
-                return True
-        return False
-
-
-class ServerParams(object):
-    def __init__(
-        self,
-        mean_service_time: int,
-    ) -> None:
-        self.mean_service_time = mean_service_time
-
-
-class QueueParams(object):
-    def __init__(
-        self,
-        max_queue_size: int,
-    ) -> None:
-        self.max_queue_size = max_queue_size
-        pass
-
-
-class GeneratorParams(object):
-    def __init__(
-            self,
-            num_rooms: int,
-            mean_interarrival_time: int,
-    ) -> None:
-        self.num_rooms = num_rooms
-        self.mean_interarrival_time = mean_interarrival_time
-        pass
-
-
-class SystemParams(object):
-    def __init__(
-        self,
-        name: str,
-        max_servers: int,
-    ) -> None:
-        self.name = name
-        self.max_servers = max_servers
-        pass
-
-
-class VisitorServer:
-    """
-    Process visitor
-    """
-
-    def __init__(self) -> None:
-        pass
-
-    def process(self, visitor: Visitor):
-        pass
-
-    def stop(self):
-        pass
-
-
-class Queue:
-    """
-    Hold visitors
-    """
-
-    def __init__(
-        self,
-        params: QueueParams,
-    ) -> None:
-        self.visitors: List[Visitor] = []
-        self.params = params
-        return
-
-    def enqueue(self, visitor: Visitor):
-        if self.is_full():
-            raise Exception("queue is full")
-        self.visitors.append(visitor)
-
-    def dequeue(self) -> Visitor:
-        if self.is_empty():
-            raise Exception("queue is empty")
-        return self.visitors.pop(0)
-
-    def is_empty(self):
-        return len(self.visitors) == 0
-
-    def is_full(self):
-        return len(self.visitors) >= self.params.max_queue_size
-
-    def __len__(self):
-        return len(self.visitors)
-
-    def capacity(self):
-        return self.params.max_queue_size
-
-
-class System:
-    """
-    Manages a queue and its servers
-    """
-
-    def __init__(
-        self,
-        env: sp.Environment,
-        params: SystemParams,
-        queue_params: QueueParams,
-        server_params: ServerParams,
-    ) -> None:
-        self.env = env
-        self.params = params
-        self.server_params = server_params
-        self.queue = Queue(params=queue_params)
-        self.available_servers = sp.Resource(
-            self.env, capacity=params.max_servers)
-        pass
-
-    def add_visitor(self, visitor: Visitor):
-        self.queue.enqueue(visitor=visitor)
-
-    def find_visitor(self) -> Visitor:
-        try:
-            return self.queue.dequeue()
-        except Exception:
-            return None
-
-    def serve(self, visitor: Visitor):
-        pass
-
-    def schedule(self):
-        pass
-
-
-class ReceptionServer(VisitorServer):
-    def __init__(self, env: sp.Environment, params: ServerParams) -> None:
-        self.env = env
-        self.params = params
-        super().__init__()
-
-    def process(self, visitor: Visitor):
-        print(f"ReceptionServer received visitor {visitor.name}")
-        service_time = max(1, np.random.exponential(
-            self.params.mean_service_time))
-        print(
-            f"ReceptionServer process paper work for {visitor.name} in {service_time}")
-        yield self.env.timeout(service_time)
-        print(f"ReceptionServer process done for {visitor.name}")
-
-    def stop(self):
-        return
-
-
-class Reception(System):
-    def __init__(
-            self,
-            env: sp.Environment,
-            params: SystemParams,
-            queue_params: QueueParams,
-            server_params: ServerParams
-    ) -> None:
-        super().__init__(env, params, queue_params, server_params)
-
-    def serve(self, visitor: Visitor, req: sp.Resource):
-        server = ReceptionServer(
-            env=self.env,
-            params=self.server_params,
-        )
-        yield from server.process(visitor=visitor)
-        self.available_servers.release(request=req)
-        if not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
-        
-
-    def add_visitor(self, visitor: Visitor):
-        self.queue.enqueue(visitor=visitor)
-        if not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
-
-    def schedule(self):
-        while True:
-            # There's a message
-            if not self.queue.is_empty():
-                count = self.available_servers.count
-                cap = self.available_servers.capacity
-                if count < cap:
-                    # There's a server
-                    req = self.available_servers.request()
-                    visitor = self.find_visitor()
-                    yield req
-                    self.env.process(self.serve(visitor=visitor, req=req))
-                    continue
-            print("No message or servers available, go idle")
-            idle_timeout = self._idle()
-            self.idle_proc = self.env.process(idle_timeout)
-            yield self.idle_proc
-                
-            
-
-    def _idle(self):
-        try:
-            print(f"Reception is idling at {self.env.now}")
-            yield self.env.timeout(SIM_DURATION)
-        except sp.Interrupt:
-            print(f"Reception now working")
-
-    def _run_idle(self):
-        idle_timeout = self._idle()
-        self.idle_proc = self.env.process(idle_timeout)
-        yield self.idle_proc
-
-    def run(self):
-        self.env.process(self.schedule())
+import params as pr
+from visitor import Visitor
+from systems import System, Reception
 
 
 class Generator:
     def __init__(
         self,
         env: sp.Environment,
-        params: GeneratorParams,
+        params: pr.GeneratorParams,
         reception: System,
     ) -> None:
         self.env = env
@@ -259,14 +33,14 @@ if __name__ == "__main__":
 
     reception = Reception(
         env=env,
-        params=SystemParams(name="Reception", max_servers=3),
-        queue_params=QueueParams(max_queue_size=2000),
-        server_params=ServerParams(mean_service_time=3)
+        params=pr.SystemParams(name="Reception", max_servers=3),
+        queue_params=pr.QueueParams(max_queue_size=2000),
+        server_params=pr.ServerParams(mean_service_time=3)
     )
 
     gen = Generator(
         env=env,
-        params=GeneratorParams(
+        params=pr.GeneratorParams(
             num_rooms=1,
             mean_interarrival_time=1
         ),
@@ -275,4 +49,4 @@ if __name__ == "__main__":
 
     reception.run()
     gen.run()
-    env.run(until=SIM_DURATION)
+    env.run(until=pr.SIM_DURATION)
