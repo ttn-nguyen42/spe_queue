@@ -21,10 +21,8 @@ class QueueParams(object):
 class GeneratorParams(object):
     def __init__(
             self,
-            num_rooms: int,
             mean_interarrival_time: int,
     ) -> None:
-        self.num_rooms = num_rooms
         self.mean_interarrival_time = mean_interarrival_time
         pass
 

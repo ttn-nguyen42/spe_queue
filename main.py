@@ -6,6 +6,7 @@ from systems import System, Reception, Room, Hallway
 from typing import List
 import uuid
 from prettytable import PrettyTable
+import json
 
 
 class Generator:
@@ -36,40 +37,57 @@ class Generator:
 
 
 class Museum:
-    def __init__(self) -> None:
+    def __init__(self, config_path: str) -> None:
         self.env = sp.Environment()
+        self.dat = None
+        self.configure(config_path=config_path)
 
+        hallway_cfg = self.dat["hallway"]
         self.hallway = Hallway(
             env=self.env,
-            params=pr.SystemParams(name="hallway-0", max_servers=1),
-            queue_params=pr.QueueParams(max_queue_size=1000),
+            params=pr.SystemParams(
+                name=hallway_cfg["name"],
+                max_servers=1,
+            ),
+            queue_params=pr.QueueParams(
+                max_queue_size=hallway_cfg["max_queue_size"]),
             server_params=None,
             rooms=[]
         )
 
         self.rooms = self._generate_rooms(
-            amount=20,
             hallway=self.hallway,
         )
 
         self.hallway.set_rooms(self.rooms)
 
+        reception_cfg = self.dat["reception"]
         self.reception = Reception(
             env=self.env,
-            params=pr.SystemParams(name="reception", max_servers=3),
-            queue_params=pr.QueueParams(max_queue_size=2000),
-            server_params=pr.ServerParams(mean_service_time=3),
+            params=pr.SystemParams(
+                name=reception_cfg["name"],
+                max_servers=reception_cfg["max_servers"],
+            ),
+            queue_params=pr.QueueParams(
+                max_queue_size=reception_cfg["max_queue_size"],
+            ),
+            server_params=pr.ServerParams(
+                mean_service_time=reception_cfg["mean_service_time"],
+            ),
             rooms=self.rooms,
         )
 
+        generator_cfg = self.dat["generator"]
         self.generator = Generator(
             env=self.env,
             params=pr.GeneratorParams(
-                num_rooms=1,
-                mean_interarrival_time=1
+                mean_interarrival_time=generator_cfg["mean_interarrival_time"]
             ),
             reception=self.reception,
         )
+
+        sim_time = self.dat["simulation_time"]
+        pr.SIM_DURATION = sim_time
 
     # MMN0208: Add close function
     def close(self):
@@ -82,6 +100,12 @@ class Museum:
             r.idle_proc.interrupt()
         return
 
+    def configure(self, config_path: str):
+        f = open(config_path)
+        self.dat = json.load(f)
+        f.close()
+        return
+
     def open(self):
         self._start_rooms()
         self.hallway.run()
@@ -91,15 +115,22 @@ class Museum:
         self.env.run(until=proc)
         self.stats()
 
-    def _generate_rooms(self, hallway: Hallway, amount: int = 1) -> List[Room]:
+    def _generate_rooms(self, hallway: Hallway) -> List[Room]:
         i = 0
         rooms: List[Room] = []
-        while i < amount:
+        cfgs = self.dat["rooms"]
+        for room_cfg in cfgs:
             rooms.append(Room(
                 env=self.env,
-                server_params=pr.ServerParams(mean_service_time=5),
-                queue_params=pr.QueueParams(max_queue_size=2000),
-                params=pr.SystemParams(name=f"room-{i}", max_servers=20),
+                server_params=pr.ServerParams(
+                    mean_service_time=room_cfg["mean_service_time"],
+                ),
+                queue_params=pr.QueueParams(
+                    max_queue_size=room_cfg["max_queue_size"],
+                ),
+                params=pr.SystemParams(
+                    name=room_cfg["name"], max_servers=room_cfg["max_servers"],
+                ),
                 hallway=hallway,
             ))
             i += 1
@@ -111,12 +142,10 @@ class Museum:
             r.run()
 
     def stats(self):
-        # Should be able to save these to a file
-        print("#############")
         tb = PrettyTable(["system_name", "avg_idle_time",
                          "avg_service_time", "avg_wait_time"])
         tb.add_row(self.reception.get_stats().list_stats())
-        tb.add_row(self.hallway.get_stats().list_stats())
+        tb.add_row(self.hallway.get_stats().list_stats(), divider=True)
         for r in self.rooms:
             tb.add_row(r.get_stats().list_stats())
         tb.align["system_name"] = "l"
@@ -124,5 +153,5 @@ class Museum:
 
 
 if __name__ == "__main__":
-    ms = Museum()
+    ms = Museum(config_path="./config.json")
     ms.open()
