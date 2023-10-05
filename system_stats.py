@@ -29,9 +29,17 @@ class SystemStatistics:
         if self.total_visitor_count == 0:
             return 0.0
         return self.total_wait_time / self.total_visitor_count
-    
+
     # MMN0208: Add update_idle_time function
     def update_idle_time(self, idle_time: float):
         self.total_idle_count += 1
         self.total_idle_time += idle_time
         pass
+
+    def list_stats(self) -> list:
+        stats = []
+        stats.append(self.system_name)
+        stats.append(round(self.avg_idle_time(), 5))
+        stats.append(round(self.avg_service_time(), 5))
+        stats.append(round(self.avg_wait_time(), 5))
+        return stats
