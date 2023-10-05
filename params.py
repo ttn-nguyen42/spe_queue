@@ -1,3 +1,5 @@
+SIM_DURATION = 20
+
 
 class ServerParams(object):
     def __init__(
