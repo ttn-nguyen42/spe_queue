@@ -85,6 +85,7 @@ class Reception(System):
         # Move from reception to a random room
         self._move_to_room(visitor=visitor)
         self.available_servers.release(request=req)
+        self.stats.update_visitor_count()
         if not self.idle_proc.triggered:
             self.idle_proc.interrupt()
 
@@ -170,6 +171,9 @@ class Room(System):
         # Move to a hallway
         self._move_to_hallway(visitor=visitor)
         self.available_servers.release(request=req)
+        if not self.idle_proc.triggered:
+            self.idle_proc.interrupt()
+        self.stats.update_visitor_count()
 
     # Moves visitor to hallway
     def schedule(self):
@@ -247,6 +251,7 @@ class Hallway(System):
                 where = self._find_unvisited_room(visitor=visitor)
                 room = self.rooms[where]
                 # Add visitor to that room
+                self.stats.update_visitor_count()
                 continue
             else:
                 print("Hallway NO_VISITOR start idle")

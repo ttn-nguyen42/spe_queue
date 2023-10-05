@@ -34,7 +34,11 @@ class SystemStatistics:
     def update_idle_time(self, idle_time: float):
         self.total_idle_count += 1
         self.total_idle_time += idle_time
-        pass
+        return
+
+    def update_visitor_count(self):
+        self.total_visitor_count += 1
+        return
 
     def list_stats(self) -> list:
         stats = []
@@ -42,4 +46,5 @@ class SystemStatistics:
         stats.append(round(self.avg_idle_time(), 5))
         stats.append(round(self.avg_service_time(), 5))
         stats.append(round(self.avg_wait_time(), 5))
+        stats.append(self.total_visitor_count)
         return stats

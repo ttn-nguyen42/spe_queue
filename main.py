@@ -143,7 +143,7 @@ class Museum:
 
     def stats(self):
         tb = PrettyTable(["system_name", "avg_idle_time",
-                         "avg_service_time", "avg_wait_time"])
+                         "avg_service_time", "avg_wait_time", "visitors"])
         tb.add_row(self.reception.get_stats().list_stats())
         tb.add_row(self.hallway.get_stats().list_stats(), divider=True)
         for r in self.rooms:
