@@ -47,7 +47,7 @@ class Museum:
         )
 
         self.rooms = self._generate_rooms(
-            amount=1,
+            amount=20,
             hallway=self.hallway,
         )
 
@@ -55,7 +55,7 @@ class Museum:
 
         self.reception = Reception(
             env=self.env,
-            params=pr.SystemParams(name="Reception", max_servers=3),
+            params=pr.SystemParams(name="reception", max_servers=3),
             queue_params=pr.QueueParams(max_queue_size=2000),
             server_params=pr.ServerParams(mean_service_time=3),
             rooms=self.rooms,
