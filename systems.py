@@ -114,10 +114,16 @@ class Reception(System):
 
     def _idle(self):
         try:
-            print(f"Reception IDLE start = {self.env.now}")
+            # MMN0208: update idle_start, total_idle_count
+            self.stats.update_idle_count()
+            idle_start = self.env.now
+            print(f"Reception IDLE start = {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            print(f"Reception IDLE end = {self.env.now}")
+            # MMN0208: update idle_end, total_idle_time
+            idle_end = self.env.now
+            print(f"Reception IDLE end = {idle_end}")
+            self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     # Move visitor to room
     def _move_to_room(self, visitor: Visitor):
@@ -186,10 +192,16 @@ class Room(System):
 
     def _idle(self):
         try:
-            print(f"Room IDLE start = {self.env.now}")
+            # update idle_start, total_idle_count
+            self.stats.update_idle_count()
+            idle_start = self.env.now
+            print(f"Room IDLE start = {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            print(f"Reception IDLE end = {self.env.now}")
+            # update idle_end, total_idle_time
+            idle_end = self.env.now
+            print(f"Room IDLE end = {idle_end}")
+            self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _move_to_hallway(self, visitor: Visitor):
         print(f"Room TO_HALLWAY visitor = {visitor.get_name()}")
@@ -246,10 +258,16 @@ class Hallway(System):
 
     def _idle(self):
         try:
-            print(f"Hallway IDLE start = {self.env.now}")
+            # MMN0208: update idle_start, total_idle_count
+            self.stats.update_idle_count()
+            idle_start = self.env.now
+            print(f"Hallway IDLE start = {idle_start}")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            print(f"Hallway IDLE end = {self.env.now}")
+            # MMN0208: update idle_end, total_idle_time
+            idle_end = self.env.now
+            print(f"Hallway IDLE end = {idle_end}")
+            self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _find_unvisited_room(self, visitor: Visitor) -> int:
         # Find unvisited room and returns an index
