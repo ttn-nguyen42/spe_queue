@@ -69,13 +69,21 @@ class Museum:
             ),
             reception=self.reception,
         )
+        
+    def close(self):
+        yield self.env.timeout(pr.SIM_DURATION)
+        print(f"Simulation end at {self.env.now}")
+        self.hallway.idle_proc.interrupt()
+        self.reception.idle_proc.interrupt()
+        return
 
     def open(self):
-        self._start_rooms()
+        # self._start_rooms()
         self.hallway.run()
         self.reception.run()
-        self.generator.run()
-        self.env.run(until=pr.SIM_DURATION)
+        # self.generator.run()
+        proc = self.env.process(self.close())
+        self.env.run(until=proc)
         self.stats()
 
     def _generate_rooms(self, hallway: Hallway, amount: int = 1) -> List[Room]:
