@@ -77,11 +77,15 @@ class Reception(System):
         return self.params.name
 
     def serve(self, visitor: Visitor, req: sp.Resource):
+        # MMN0208: Update service time
+        service_start = self.env.now
         server = ReceptionServer(
             env=self.env,
             params=self.server_params,
         )
         yield from server.process(visitor=visitor)
+        service_end = self.env.now
+        self.stats.update_service_time(service_end - service_start)
         # Move from reception to a random room
         self._move_to_room(visitor=visitor)
         self.available_servers.release(request=req)
@@ -101,33 +105,36 @@ class Reception(System):
                 if self.is_available():
                     # There's a server
                     req = self.available_servers.request()
+                    self.stats.update_service_requests()
                     visitor = self.find_visitor()
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
-                    continue
                 else:
-                    print("Reception NO_SERVER start idle")
+                    print(f"At time t = {self.env.now}, Reception NO_SERVER starts idle")
+                    idle_timeout = self._idle()
+                    self.idle_proc = self.env.process(idle_timeout)
+                    yield self.idle_proc
             else:
-                print("Reception NO_VISITOR start idle")
-            idle_timeout = self._idle()
-            self.idle_proc = self.env.process(idle_timeout)
-            yield self.idle_proc
+                print(f"At time t = {self.env.now}, Reception NO_VISITOR starts idle")
+                idle_timeout = self._idle()
+                self.idle_proc = self.env.process(idle_timeout)
+                yield self.idle_proc
 
     def _idle(self):
         try:
             # MMN0208: update idle_start, total_idle_count
             idle_start = self.env.now
-            print(f"Reception IDLE start at {idle_start}")
+            print(f"At time t = {idle_start}, Reception IDLE starts")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
             # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
-            print(f"Reception IDLE end at {idle_end}")
+            print(f"At time t = {idle_end}, Reception IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     # Move visitor to room
     def _move_to_room(self, visitor: Visitor):
-        print(f"Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
+        print(f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
 
         # Choose a random room to move visitor to
         # self.rooms
@@ -181,14 +188,15 @@ class Room(System):
             if not self.is_empty():
                 if self.is_available():
                     req = self.available_servers.request()
+                    self.stats.update_service_requests()
                     visitor = self.find_visitor()
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
                     continue
                 else:
-                    print("Room NO_SERVER start idle")
+                    print(f"At time t = {self.env.now}, Room NO_SERVER starts idle")
             else:
-                print("Room NO_VISITOR start idle")
+                print(f"At time t = {self.env.now}, Room NO_VISITOR starts idle")
             idle_timeout = self._idle()
             self.idle_proc = self.env.process(idle_timeout)
             yield self.idle_proc
@@ -197,16 +205,16 @@ class Room(System):
         try:
             # MMN0208: update idle_start
             idle_start = self.env.now
-            print(f"Room IDLE start at {idle_start}")
+            print(f"At time t = {idle_start}, Room IDLE starts")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
             # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
-            print(f"Room IDLE end at {idle_end}")
+            print(f"At time t = {idle_end}, Room IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _move_to_hallway(self, visitor: Visitor):
-        print(f"Room TO_HALLWAY visitor = {visitor.get_name()}")
+        print(f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
         # Add this room to list of visited place of visitor
         # Move visitor to hallway
         # self.hallway
@@ -254,7 +262,7 @@ class Hallway(System):
                 self.stats.update_visitor_count()
                 continue
             else:
-                print("Hallway NO_VISITOR start idle")
+                print(f"At time t = {self.env.now}, Hallway NO_VISITOR start idle")
             idle_timeout = self._idle()
             self.idle_proc = self.env.process(idle_timeout)
             yield self.idle_proc
@@ -263,12 +271,12 @@ class Hallway(System):
         try:
             # MMN0208: update idle_start, total_idle_count
             idle_start = self.env.now
-            print(f"Hallway IDLE start at {idle_start}")
+            print(f"At time t = {idle_start}, Hallway IDLE starts")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
             # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
-            print(f"Hallway IDLE end at {idle_end}")
+            print(f"At time t = {idle_end}, Hallway IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _find_unvisited_room(self, visitor: Visitor) -> int:
