@@ -121,7 +121,6 @@ class Museum:
         self.stats()
 
     def _generate_rooms(self, hallway: Hallway) -> List[Room]:
-        i = 0
         rooms: List[Room] = []
         cfgs = self.dat["rooms"]
         for room_cfg in cfgs:
@@ -138,7 +137,6 @@ class Museum:
                 ),
                 hallway=hallway,
             ))
-            i += 1
         return rooms
 
     def _start_rooms(self):
