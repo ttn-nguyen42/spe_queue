@@ -25,7 +25,7 @@ class Generator:
             interarrival = np.random.exponential(
                 self.params.mean_interarrival_time)
             yield self.env.timeout(interarrival)
-            print(f"Genrator NEW_VISITOR {self.env.now}")
+            print(f"At time t = {self.env.now}, Generate NEW_VISITOR")
             self.reception.add_visitor(
                 visitor=Visitor(name=self._random_name()))
 
@@ -93,11 +93,14 @@ class Museum:
     def close(self):
         yield self.env.timeout(pr.SIM_DURATION)
         print(
-            f"------------------------\nSimulation end at {self.env.now}\n------------------------")
-        self.hallway.idle_proc.interrupt()
-        self.reception.idle_proc.interrupt()
+            f"------------------------\nAt time t =  {self.env.now}, Museum CLOSES\n------------------------")
+        self.hallway.stop_idle()
+        self.hallway.stop_active()
+        self.reception.stop_idle()
+        self.reception.stop_active()
         for r in self.rooms:
-            r.idle_proc.interrupt()
+            r.stop_idle()
+            r.stop_active()
         return
 
     def configure(self, config_path: str):
@@ -107,6 +110,8 @@ class Museum:
         return
 
     def open(self):
+        print(
+            f"------------------------\nAt time t =  {self.env.now}, Museum OPENS\n------------------------")
         self._start_rooms()
         self.hallway.run()
         self.reception.run()
@@ -116,7 +121,6 @@ class Museum:
         self.stats()
 
     def _generate_rooms(self, hallway: Hallway) -> List[Room]:
-        i = 0
         rooms: List[Room] = []
         cfgs = self.dat["rooms"]
         for room_cfg in cfgs:
@@ -133,7 +137,6 @@ class Museum:
                 ),
                 hallway=hallway,
             ))
-            i += 1
         return rooms
 
     def _start_rooms(self):
@@ -142,7 +145,9 @@ class Museum:
             r.run()
 
     def stats(self):
-        tb = PrettyTable(["system_name", "avg_idle_time",
+        print(
+            f"------------------------\nSimulation time = {pr.SIM_DURATION}\n------------------------")
+        tb = PrettyTable(["system_name", "total_idle_time",
                          "avg_service_time", "avg_wait_time", "visitors"])
         tb.add_row(self.reception.get_stats().list_stats())
         tb.add_row(self.hallway.get_stats().list_stats(), divider=True)
