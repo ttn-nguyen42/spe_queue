@@ -75,6 +75,7 @@ class Museum:
                 mean_service_time=reception_cfg["mean_service_time"],
             ),
             rooms=self.rooms,
+            hallway=self.hallway,
         )
 
         generator_cfg = self.dat["generator"]

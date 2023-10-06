@@ -54,7 +54,7 @@ class RoomServer(VisitorServer):
             self.params.mean_service_time,
         ))
         print(f"At time t = {self.env.now}, RoomServer START visitor = {visitor.name}, duration = {service_time}")
-        yield self.timeout(service_time)
+        yield self.env.timeout(service_time)
         print(f"At time t = {self.env.now}, RoomServer FINISH visitor = {visitor.name}")
 
     def stop(self):

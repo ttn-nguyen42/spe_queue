@@ -68,8 +68,10 @@ class Reception(System):
             queue_params: pr.QueueParams,
             server_params: pr.ServerParams,
             rooms: list[System] = None,
+            hallway: System = None 
     ) -> None:
         self.rooms = rooms
+        self.hallway = hallway
         self.idle_proc = None
         self.active_proc = None
         self.is_idle = True
@@ -172,8 +174,21 @@ class Reception(System):
         # Choose a random room to move visitor to
         # self.rooms
         # Room name: self.rooms[i].get_name()
-        room = random.randint(1,4) 
-        Room.add_visitor(room,visitor)
+        
+        # Check which room available //Find first -> random that list
+        avail_room: list[System]=[]
+        for room in self.rooms:
+            if room.is_available() and not room.is_full():
+                avail_room.append(room)
+                #add vistor to this room
+        if len(avail_room) > 0:
+            room_select = random.choice(avail_room)
+            print(room_select)
+            #Add to another room
+            room_select.add_visitor(visitor=visitor)
+            return
+        # If no room available, add to hallway
+        self.hallway.add_visitor(visitor=visitor) 
         return
 
     def run(self):
@@ -218,6 +233,15 @@ class Room(System):
         if self.active_proc is not None and not self.active_proc.triggered:
             self.active_proc.interrupt()
 
+    def _active(self):
+        try:
+            active_start = self.env.now
+            print(f"At time t = {active_start}, Room {self.get_name()} ACTIVE starts")
+            yield self.env.timeout(pr.SIM_DURATION)
+        except sp.Interrupt:
+            active_end = self.env.now
+            print(f"At time t = {active_end}, Room {self.get_name()} ACTIVE ends")
+            
     # Serve visitor for visting the room
     def serve(self, visitor: Visitor, req: sp.Resource):
         server = RoomServer(
@@ -278,8 +302,6 @@ class Room(System):
         # self.hallway
         # This room name: self.get_name()
         # visitor.visited(room) //Not sure should have this or not?
-        visitor.visited(Room.get_name) # Fix it later.
-        Hallway.add_visitor(self.hallway,visitor)
     def run(self):
         self.env.process(self.schedule())
 
