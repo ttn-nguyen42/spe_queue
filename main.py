@@ -94,10 +94,13 @@ class Museum:
         yield self.env.timeout(pr.SIM_DURATION)
         print(
             f"------------------------\nAt time t =  {self.env.now}, Museum CLOSES\n------------------------")
-        self.hallway.idle_proc.interrupt()
-        self.reception.idle_proc.interrupt()
+        self.hallway.stop_idle()
+        self.hallway.stop_active()
+        self.reception.stop_idle()
+        self.reception.stop_active()
         for r in self.rooms:
-            r.idle_proc.interrupt()
+            r.stop_idle()
+            r.stop_active()
         return
 
     def configure(self, config_path: str):

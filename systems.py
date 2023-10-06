@@ -50,6 +50,9 @@ class System:
         in_use = self.available_servers.count
         return in_use < cap
 
+    def is_active(self) -> bool:
+        return self.available_servers.count > 0
+
     def serve(self, visitor: Visitor, req: sp.Resource):
         pass
 
@@ -67,6 +70,9 @@ class Reception(System):
             rooms: list[System] = None,
     ) -> None:
         self.rooms = rooms
+        self.idle_proc = None
+        self.active_proc = None
+        self.is_idle = True
         super().__init__(env, params, queue_params, server_params)
 
     def set_rooms(self, rooms: list[System]):
@@ -90,13 +96,27 @@ class Reception(System):
         self._move_to_room(visitor=visitor)
         self.available_servers.release(request=req)
         self.stats.update_visitor_count()
-        if not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
+
+        if self.is_available():
+            self.stop_active()
 
     def add_visitor(self, visitor: Visitor):
         super().add_visitor(visitor=visitor)
-        if not self.idle_proc.triggered:
+
+        if self.is_idle:
+            self.stop_idle()
+
+        if self.is_available():
+            self.stop_active()
+
+    def stop_idle(self):
+        self.is_idle = False
+        if self.idle_proc is not None and not self.idle_proc.triggered:
             self.idle_proc.interrupt()
+
+    def stop_active(self):
+        if self.active_proc is not None and not self.active_proc.triggered:
+            self.active_proc.interrupt()
 
     def schedule(self):
         while True:
@@ -109,13 +129,16 @@ class Reception(System):
                     visitor = self.find_visitor()
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
-                else:
-                    print(f"At time t = {self.env.now}, Reception NO_SERVER starts idle")
-                    idle_timeout = self._idle()
-                    self.idle_proc = self.env.process(idle_timeout)
-                    yield self.idle_proc
+                    continue
             else:
-                print(f"At time t = {self.env.now}, Reception NO_VISITOR starts idle")
+                print(
+                    f"At time t = {self.env.now}, Reception NO_VISITOR idle start")
+            if self.is_active():
+                active_state = self._active()
+                self.active_proc = self.env.process(active_state)
+                yield self.active_proc
+            else:
+                self.is_idle = True
                 idle_timeout = self._idle()
                 self.idle_proc = self.env.process(idle_timeout)
                 yield self.idle_proc
@@ -132,9 +155,19 @@ class Reception(System):
             print(f"At time t = {idle_end}, Reception IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
+    def _active(self):
+        try:
+            active_start = self.env.now
+            print(f"At time t = {active_start}, Reception ACTIVE starts")
+            yield self.env.timeout(pr.SIM_DURATION)
+        except sp.Interrupt:
+            active_end = self.env.now
+            print(f"At time t = {active_end}, Reception ACTIVE ends")
+
     # Move visitor to room
     def _move_to_room(self, visitor: Visitor):
-        print(f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
+        print(
+            f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
 
         # Choose a random room to move visitor to
         # self.rooms
@@ -154,6 +187,8 @@ class Room(System):
             server_params: pr.ServerParams,
             hallway: System = None) -> None:
         self.hallway = hallway
+        self.active_proc = None
+        self.idle_proc = None
         super().__init__(env, params, queue_params, server_params)
 
     def set_hallway(self, hallway: System):
@@ -162,11 +197,24 @@ class Room(System):
 
     def add_visitor(self, visitor: Visitor):
         super().add_visitor(visitor=visitor)
-        if not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
+
+        if self.is_idle:
+            self.stop_idle()
+
+        if self.is_available():
+            self.stop_active()
 
     def get_name(self) -> str:
         return self.params.name
+
+    def stop_idle(self):
+        self.is_idle = False
+        if self.idle_proc is not None and not self.idle_proc.triggered:
+            self.idle_proc.interrupt()
+
+    def stop_active(self):
+        if self.active_proc is not None and not self.active_proc.triggered:
+            self.active_proc.interrupt()
 
     # Serve visitor for visting the room
     def serve(self, visitor: Visitor, req: sp.Resource):
@@ -178,9 +226,11 @@ class Room(System):
         # Move to a hallway
         self._move_to_hallway(visitor=visitor)
         self.available_servers.release(request=req)
-        if not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
+
         self.stats.update_visitor_count()
+
+        if self.is_available():
+            self.stop_active()
 
     # Moves visitor to hallway
     def schedule(self):
@@ -193,13 +243,18 @@ class Room(System):
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
                     continue
-                else:
-                    print(f"At time t = {self.env.now}, Room NO_SERVER starts idle")
             else:
-                print(f"At time t = {self.env.now}, Room NO_VISITOR starts idle")
-            idle_timeout = self._idle()
-            self.idle_proc = self.env.process(idle_timeout)
-            yield self.idle_proc
+                print(
+                    f"At time t = {self.env.now}, Room {self.get_name()} NO_VISITOR idle start")
+            if self.is_active():
+                active_state = self._active()
+                self.active_proc = self.env.process(active_state)
+                yield self.active_proc
+            else:
+                self.is_idle = True
+                idle_timeout = self._idle()
+                self.idle_proc = self.env.process(idle_timeout)
+                yield self.idle_proc
 
     def _idle(self):
         try:
@@ -214,7 +269,8 @@ class Room(System):
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _move_to_hallway(self, visitor: Visitor):
-        print(f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
+        print(
+            f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
         # Add this room to list of visited place of visitor
         # Move visitor to hallway
         # self.hallway
@@ -233,6 +289,8 @@ class Hallway(System):
             server_params: pr.ServerParams,
             rooms: list[Room] = None) -> None:
         self.rooms = rooms
+        self.active_proc = None
+        self.idle_proc = None
         super().__init__(env, params, queue_params, server_params)
 
     def set_rooms(self, rooms: list[Room]):
@@ -244,8 +302,21 @@ class Hallway(System):
 
     def add_visitor(self, visitor: Visitor):
         super().add_visitor(visitor=visitor)
-        if not self.idle_proc.triggered:
+
+        if self.is_idle:
+            self.stop_idle()
+
+        if self.is_available():
+            self.stop_active()
+
+    def stop_idle(self):
+        self.is_idle = False
+        if self.idle_proc is not None and not self.idle_proc.triggered:
             self.idle_proc.interrupt()
+
+    def stop_active(self):
+        if self.active_proc is not None and not self.active_proc.triggered:
+            self.active_proc.interrupt()
 
     # Should be doing nothing
     def serve(self, visitor: Visitor, req: sp.Resource):
@@ -262,11 +333,12 @@ class Hallway(System):
                 self.stats.update_visitor_count()
                 continue
             else:
-                print(f"At time t = {self.env.now}, Hallway NO_VISITOR start idle")
+                print(
+                    f"At time t = {self.env.now}, Hallway NO_VISITOR start idle")
             idle_timeout = self._idle()
             self.idle_proc = self.env.process(idle_timeout)
             yield self.idle_proc
-
+            
     def _idle(self):
         try:
             # MMN0208: update idle_start, total_idle_count
