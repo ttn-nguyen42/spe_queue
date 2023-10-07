@@ -1,11 +1,13 @@
 {
-  "simulation_time": 40000,
+  "simulation_time": 1000,
   "generator": {
     "mean_interarrival_time": 2
   },
   "hallway": {
     "name": "hallway-0",
-    "max_queue_size": 1000000
+    "max_queue_size": 1000000,
+    "mean_service_time": 5,
+    "max_servers": 1000
   },
   "reception": {
     "name": "reception-0",
@@ -17,37 +19,37 @@
     {
       "name": "dinosaur",
       "max_queue_size": 20000,
-      "mean_service_time": 100,
+      "mean_service_time": 10,
       "max_servers": 20
     },
     {
       "name": "ice_age",
       "max_queue_size": 10000,
-      "mean_service_time": 100,
-      "max_servers": 10
+      "mean_service_time": 10,
+      "max_servers": 20
     },
     {
       "name": "egyption",
       "max_queue_size": 30000,
-      "mean_service_time": 300,
+      "mean_service_time": 10,
       "max_servers": 20
     },
     {
       "name": "vietnamese",
       "max_queue_size": 20000,
-      "mean_service_time": 100,
-      "max_servers": 50
+      "mean_service_time": 10,
+      "max_servers": 20
     },
     {
       "name": "america",
       "max_queue_size": 30000,
-      "mean_service_time": 100,
+      "mean_service_time": 10,
       "max_servers": 20
     },
     {
       "name": "mongol",
       "max_queue_size": 20000,
-      "mean_service_time": 100,
+      "mean_service_time": 10,
       "max_servers": 20
     }
   ]

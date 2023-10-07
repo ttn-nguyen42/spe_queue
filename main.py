@@ -7,6 +7,10 @@ from typing import List
 import uuid
 from prettytable import PrettyTable
 import json
+import random
+import time
+
+random.seed(time.time())
 
 
 class Generator:
@@ -50,11 +54,12 @@ class Museum:
             env=self.env,
             params=pr.SystemParams(
                 name=hallway_cfg["name"],
-                max_servers=1,
+                max_servers=hallway_cfg["max_servers"],
             ),
             queue_params=pr.QueueParams(
                 max_queue_size=hallway_cfg["max_queue_size"]),
-            server_params=None,
+            server_params=pr.ServerParams(
+                mean_service_time=hallway_cfg["mean_service_time"]),
             rooms=[]
         )
 

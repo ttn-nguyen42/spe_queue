@@ -2,7 +2,7 @@ import simpy as sp
 import params as pr
 from visitor import Visitor, Entry, VisitorStatistics
 from qs import Queue
-from servers import ReceptionServer, RoomServer
+from servers import ReceptionServer, RoomServer, HallwayServer
 from system_stats import SystemStatistics
 import random
 
@@ -384,7 +384,6 @@ class Hallway(System):
         return self.params.name
 
     def add_visitor(self, visitor: Visitor):
-
         stats = VisitorStatistics()
         ent = Entry(
             id=self.get_name(),
@@ -398,6 +397,9 @@ class Hallway(System):
         if self.is_idle:
             self.stop_idle()
 
+        if self.is_available():
+            self.stop_active()
+
     def stop_idle(self):
         self.is_idle = False
         if self.idle_proc is not None and not self.idle_proc.triggered:
@@ -405,33 +407,51 @@ class Hallway(System):
 
     # Should be doing nothing
     def serve(self, visitor: Visitor, req: sp.Resource):
-        return
+        service_start = self.env.now
+        server = HallwayServer(
+            env=self.env,
+            params=self.server_params,
+        )
+        yield from server.process(visitor=visitor)
+        service_end = self.env.now
+        self.stats.update_service_time(service_end - service_start)
+        self.available_servers.release(request=req)
+        self.stats.update_visitor_count()
+
+        if self.is_available():
+            self.stop_active()
 
     # Moves its visitor to rooms
     def schedule(self):
         while True:
             if not self.is_empty():
-                self.is_idle = False
-                visitor = self.find_visitor()
-                visitor.update_wait_time(
-                    id=self.get_name(),
-                    end=self.env.now)
-
-                self.stats.update_wait_time(
-                    wait_time=visitor.get_wait_time(id=self.get_name()))
-                where = self._find_unvisited_room(visitor=visitor)
-                room = self.rooms[where]
-                # Add visitor to that room
-                room.add_visitor(visitor=visitor)
-                self.stats.update_visitor_count()
-                continue
+                if self.is_available():
+                    print(
+                        f"Hallway servers count = {self.available_servers.count}/{self.available_servers.capacity}")
+                    req = self.available_servers.request()
+                    self.stats.update_service_requests()
+                    visitor = self.find_visitor()
+                    visitor.update_wait_time(
+                        id=self.get_name(),
+                        end=self.env.now)
+                    self.stats.update_wait_time(
+                        wait_time=visitor.get_wait_time(id=self.get_name()))
+                    self._send_to_unvisited_room(visitor=visitor)
+                    yield req
+                    self.env.process(self.serve(visitor=visitor, req=req))
+                    continue
             else:
                 print(
-                    f"At time t = {self.env.now}, Hallway NO_VISITOR start idle")
-            self.is_idle = True
-            idle_timeout = self._idle()
-            self.idle_proc = self.env.process(idle_timeout)
-            yield self.idle_proc
+                    f"At time t = {self.env.now}, Hallway {self.get_name()} NO_VISITOR idle start")
+            if self.is_active():
+                active_state = self._active()
+                self.active_proc = self.env.process(active_state)
+                yield self.active_proc
+            else:
+                self.is_idle = True
+                idle_timeout = self._idle()
+                self.idle_proc = self.env.process(idle_timeout)
+                yield self.idle_proc
 
     def _idle(self):
         try:
@@ -443,11 +463,20 @@ class Hallway(System):
             print(f"At time t = {idle_end}, Hallway IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
-    def _find_unvisited_room(self, visitor: Visitor) -> int:
+    def _send_to_unvisited_room(self, visitor: Visitor) -> int:
         # Find unvisited room and returns an index
         # self.rooms
-        # This hallway name: self.get_name()
-        return 0
+        all_rooms = self.rooms
+        available_rooms = []
+        for i, r in enumerate(all_rooms):
+            if visitor.has_visited(r.get_name()):
+                available_rooms.append(i)
+        if len(available_rooms) == 0:
+            print("Hallway VISITOR_DONE")
+            return
+        chosen = random.choice(available_rooms)
+        all_rooms[chosen].add_visitor(visitor=visitor)
+        return
 
     def run(self):
         self.env.process(self.schedule())
@@ -459,6 +488,22 @@ class Hallway(System):
             self.stats.update_wait_time(
                 wait_time=v.get_wait_time(id=self.get_name()))
 
+    def stop_active(self):
+        if self.active_proc is not None and not self.active_proc.triggered:
+            self.active_proc.interrupt()
+
+    def _active(self):
+        try:
+            active_start = self.env.now
+            print(
+                f"At time t = {active_start}, Room {self.get_name()} ACTIVE starts")
+            yield self.env.timeout(pr.SIM_DURATION)
+        except sp.Interrupt:
+            active_end = self.env.now
+            print(
+                f"At time t = {active_end}, Room {self.get_name()} ACTIVE ends")
+
     def stop(self):
         self.stop_idle()
+        self.stop_active()
         self.calculate_in_queue_wait_time()
