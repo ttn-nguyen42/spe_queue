@@ -384,6 +384,7 @@ class Hallway(System):
         return self.params.name
 
     def add_visitor(self, visitor: Visitor):
+
         stats = VisitorStatistics()
         ent = Entry(
             id=self.get_name(),
@@ -410,6 +411,7 @@ class Hallway(System):
     def schedule(self):
         while True:
             if not self.is_empty():
+                self.is_idle = False
                 visitor = self.find_visitor()
                 visitor.update_wait_time(
                     id=self.get_name(),
@@ -420,11 +422,13 @@ class Hallway(System):
                 where = self._find_unvisited_room(visitor=visitor)
                 room = self.rooms[where]
                 # Add visitor to that room
+                room.add_visitor(visitor=visitor)
                 self.stats.update_visitor_count()
                 continue
             else:
                 print(
                     f"At time t = {self.env.now}, Hallway NO_VISITOR start idle")
+            self.is_idle = True
             idle_timeout = self._idle()
             self.idle_proc = self.env.process(idle_timeout)
             yield self.idle_proc
