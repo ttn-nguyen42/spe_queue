@@ -17,7 +17,7 @@ class VisitorStatistics:
         self.service_time = t
 
     def __str__(self) -> str:
-        return f"wait_time={self.wait_time} service_time={self.service_time} start_wait_time={self.start_wait_time}"
+        return f"wait_time={self.wait_time} service_time={self.service_time} start_wait_time={self.start_wait_time} end_wait_time={self.end_wait_time}"
 
     def get_wait_time(self) -> str:
         return self.wait_time
@@ -71,6 +71,7 @@ class Visitor:
     def update_wait_time(self, id: str, end: float):
         for r in self.queues_visited:
             if r.id == id:
+                r.stats.end_wait_time = end
                 r.stats.set_wait_time(end - r.stats.start_wait_time)
                 print(f"STAT: {r.stats}")
                 return
