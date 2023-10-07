@@ -245,11 +245,14 @@ class Room(System):
 
     # Serve visitor for visting the room
     def serve(self, visitor: Visitor, req: sp.Resource):
+        service_start = self.env.now
         server = RoomServer(
             env=self.env,
             params=self.server_params,
         )
         yield from server.process(visitor=visitor)
+        service_end = self.env.now
+        self.stats.update_service_time(service_end - service_start)
         # Move to a hallway
         self._move_to_hallway(visitor=visitor)
         self.available_servers.release(request=req)
