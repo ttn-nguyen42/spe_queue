@@ -55,4 +55,5 @@ class SystemStatistics:
         stats.append(round(self.avg_service_time(), 5))
         stats.append(round(self.avg_wait_time(), 5))
         stats.append(self.total_visitor_count)
+        stats.append(self.in_queue_at_end)
         return stats

@@ -1,7 +1,7 @@
 {
   "simulation_time": 40000,
   "generator": {
-    "mean_interarrival_time": 0.1
+    "mean_interarrival_time": 0.5
   },
   "hallway": {
     "name": "hallway-0",
@@ -9,45 +9,45 @@
   },
   "reception": {
     "name": "reception-0",
-    "max_queue_size": 5000,
-    "max_servers": 1,
+    "max_queue_size": 50000,
+    "max_servers": 1000,
     "mean_service_time": 5
   },
   "rooms": [
     {
       "name": "dinosaur",
       "max_queue_size": 2000,
-      "mean_service_time": 10,
+      "mean_service_time": 100,
       "max_servers": 20
     },
     {
       "name": "ice_age",
       "max_queue_size": 1000,
-      "mean_service_time": 10,
+      "mean_service_time": 100,
       "max_servers": 10
     },
     {
       "name": "egyption",
       "max_queue_size": 3000,
-      "mean_service_time": 30,
+      "mean_service_time": 300,
       "max_servers": 20
     },
     {
       "name": "vietnamese",
       "max_queue_size": 2000,
-      "mean_service_time": 10,
+      "mean_service_time": 100,
       "max_servers": 50
     },
     {
       "name": "america",
       "max_queue_size": 3000,
-      "mean_service_time": 1,
+      "mean_service_time": 100,
       "max_servers": 20
     },
     {
       "name": "mongol",
       "max_queue_size": 2000,
-      "mean_service_time": 10,
+      "mean_service_time": 100,
       "max_servers": 20
     }
   ]

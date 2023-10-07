@@ -139,12 +139,11 @@ class Reception(System):
                         f"Reception servers count = {self.available_servers.count}/{self.available_servers.capacity}")
                     self.stats.update_service_requests()
                     visitor = self.find_visitor()
-                    
+
                     visitor.update_wait_time(
                         id=self.get_name(),
                         end=self.env.now)
 
-                    print(visitor.started_waiting_at(self.get_name()))
                     self.stats.update_wait_time(
                         wait_time=visitor.get_wait_time(id=self.get_name()))
 
@@ -234,6 +233,7 @@ class Room(System):
         self.hallway = hallway
         self.active_proc = None
         self.idle_proc = None
+        self.is_idle = True
         super().__init__(env, params, queue_params, server_params)
 
     def set_hallway(self, hallway: System):
@@ -241,6 +241,14 @@ class Room(System):
         return self
 
     def add_visitor(self, visitor: Visitor):
+        stats = VisitorStatistics()
+        ent = Entry(
+            id=self.get_name(),
+            stats=stats,
+        )
+        visitor.queues_visited.append(ent)
+        stats.start_wait_time = self.env.now
+
         super().add_visitor(visitor=visitor)
 
         if self.is_idle:
@@ -301,6 +309,12 @@ class Room(System):
                         f"Room {self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
                     self.stats.update_service_requests()
                     visitor = self.find_visitor()
+                    visitor.update_wait_time(
+                        id=self.get_name(),
+                        end=self.env.now)
+
+                    self.stats.update_wait_time(
+                        wait_time=visitor.get_wait_time(id=self.get_name()))
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
                     continue
@@ -339,6 +353,18 @@ class Room(System):
     def run(self):
         self.env.process(self.schedule())
 
+    def calculate_in_queue_wait_time(self):
+        remaining_visitors = self.queue.visitors
+        self.stats.in_queue_at_end = len(remaining_visitors)
+        for v in remaining_visitors:
+            self.stats.update_wait_time(
+                wait_time=v.get_wait_time(id=self.get_name()))
+
+    def stop(self):
+        self.stop_idle()
+        self.stop_active()
+        self.calculate_in_queue_wait_time()
+
 
 class Hallway(System):
     def __init__(
@@ -351,6 +377,7 @@ class Hallway(System):
         self.rooms = rooms
         self.active_proc = None
         self.idle_proc = None
+        self.is_idle = True
         super().__init__(env, params, queue_params, server_params)
 
     def set_rooms(self, rooms: list[Room]):
@@ -361,13 +388,18 @@ class Hallway(System):
         return self.params.name
 
     def add_visitor(self, visitor: Visitor):
+        stats = VisitorStatistics()
+        ent = Entry(
+            id=self.get_name(),
+            stats=stats,
+        )
+        visitor.queues_visited.append(ent)
+        stats.start_wait_time = self.env.now
+
         super().add_visitor(visitor=visitor)
 
         if self.is_idle:
             self.stop_idle()
-
-        if self.is_available():
-            self.stop_active()
 
     def stop_idle(self):
         self.is_idle = False
@@ -387,6 +419,12 @@ class Hallway(System):
         while True:
             if not self.is_empty():
                 visitor = self.find_visitor()
+                visitor.update_wait_time(
+                    id=self.get_name(),
+                    end=self.env.now)
+
+                self.stats.update_wait_time(
+                    wait_time=visitor.get_wait_time(id=self.get_name()))
                 where = self._find_unvisited_room(visitor=visitor)
                 room = self.rooms[where]
                 # Add visitor to that room
@@ -417,3 +455,15 @@ class Hallway(System):
 
     def run(self):
         self.env.process(self.schedule())
+
+    def calculate_in_queue_wait_time(self):
+        remaining_visitors = self.queue.visitors
+        self.stats.in_queue_at_end = len(remaining_visitors)
+        for v in remaining_visitors:
+            self.stats.update_wait_time(
+                wait_time=v.get_wait_time(id=self.get_name()))
+
+    def stop(self):
+        self.stop_idle()
+        self.stop_active()
+        self.calculate_in_queue_wait_time()
