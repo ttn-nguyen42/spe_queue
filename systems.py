@@ -304,6 +304,12 @@ class Room(System):
         # This room name: self.get_name()
         # visitor.visited(room) //Not sure should have this or not?
 
+
+        visitor.visited(self)
+    
+        self.hallway.add_visitor(visitor=visitor)
+
+
     def run(self):
         self.env.process(self.schedule())
 
@@ -381,7 +387,13 @@ class Hallway(System):
         # Find unvisited room and returns an index
         # self.rooms
         # This hallway name: self.get_name()
-        return 0
 
+        for index, room in enumerate(self.rooms):
+            if not visitor.has_visited(room):
+                print(f"Index = {index}, index")
+                return index
+            
+        return -1
+        
     def run(self):
         self.env.process(self.schedule())

@@ -1,5 +1,5 @@
 {
-  "simulation_time": 400,
+  "simulation_time": 100,
   "generator": {
     "mean_interarrival_time": 0.5
   },
