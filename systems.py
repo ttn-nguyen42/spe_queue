@@ -390,7 +390,6 @@ class Hallway(System):
 
         for index, room in enumerate(self.rooms):
             if not visitor.has_visited(room):
-                print(f"Index = {index}, index")
                 return index
             
         return -1
