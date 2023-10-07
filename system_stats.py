@@ -57,3 +57,15 @@ class SystemStatistics:
         stats.append(self.total_visitor_count)
         stats.append(self.in_queue_at_end)
         return stats
+
+
+class EndStats:
+    def __init__(self) -> None:
+        self.visitor_finished: int = 0
+        pass
+
+    def update_visitor_finished(self):
+        self.visitor_finished += 1
+
+    def get_visitor_finished(self):
+        return self.visitor_finished
