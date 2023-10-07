@@ -97,8 +97,7 @@ class Museum:
             f"------------------------\nAt time t =  {self.env.now}, Museum CLOSES\n------------------------")
         self.hallway.stop_idle()
         self.hallway.stop_active()
-        self.reception.stop_idle()
-        self.reception.stop_active()
+        self.reception.stop()
         for r in self.rooms:
             r.stop_idle()
             r.stop_active()

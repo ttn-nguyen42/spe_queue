@@ -1,6 +1,6 @@
 import simpy as sp
 import params as pr
-from visitor import Visitor
+from visitor import Visitor, Entry, VisitorStatistics
 from qs import Queue
 from servers import ReceptionServer, RoomServer
 from system_stats import SystemStatistics
@@ -103,6 +103,14 @@ class Reception(System):
             self.stop_active()
 
     def add_visitor(self, visitor: Visitor):
+        stats = VisitorStatistics()
+        ent = Entry(
+            id=self.get_name(),
+            stats=stats,
+        )
+        visitor.queues_visited.append(ent)
+        stats.start_wait_time = self.env.now
+
         super().add_visitor(visitor=visitor)
 
         if self.is_idle:
@@ -131,6 +139,15 @@ class Reception(System):
                         f"Reception servers count = {self.available_servers.count}/{self.available_servers.capacity}")
                     self.stats.update_service_requests()
                     visitor = self.find_visitor()
+                    
+                    visitor.update_wait_time(
+                        id=self.get_name(),
+                        end=self.env.now)
+
+                    print(visitor.started_waiting_at(self.get_name()))
+                    self.stats.update_wait_time(
+                        wait_time=visitor.get_wait_time(id=self.get_name()))
+
                     yield req
                     self.env.process(self.serve(visitor=visitor, req=req))
                     continue
@@ -192,6 +209,18 @@ class Reception(System):
 
     def run(self):
         self.env.process(self.schedule())
+
+    def calculate_in_queue_wait_time(self):
+        remaining_visitors = self.queue.visitors
+        self.stats.in_queue_at_end = len(remaining_visitors)
+        for v in remaining_visitors:
+            self.stats.update_wait_time(
+                wait_time=v.get_wait_time(id=self.get_name()))
+
+    def stop(self):
+        self.stop_idle()
+        self.stop_active()
+        self.calculate_in_queue_wait_time()
 
 
 class Room(System):

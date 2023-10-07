@@ -9,6 +9,8 @@ class SystemStatistics:
 
         self.total_wait_time: float = 0.0
         self.total_visitor_count: int = 0
+
+        self.in_queue_at_end: int = 0
         pass
 
     def __str__(self) -> str:
@@ -22,11 +24,14 @@ class SystemStatistics:
     def avg_wait_time(self) -> float:
         if self.total_visitor_count == 0:
             return 0.0
-        return self.total_wait_time / self.total_visitor_count
+        return self.total_wait_time / (self.total_visitor_count + self.in_queue_at_end)
 
     def update_idle_time(self, idle_time: float):
         self.total_idle_time += idle_time
         return
+
+    def set_in_queue_at_end(self, amount: int):
+        self.in_queue_at_end = amount
 
     def update_service_requests(self):
         self.total_service_requests += 1
@@ -39,6 +44,9 @@ class SystemStatistics:
     def update_visitor_count(self):
         self.total_visitor_count += 1
         return
+
+    def update_wait_time(self, wait_time: float):
+        self.total_wait_time += wait_time
 
     def list_stats(self) -> list:
         stats = []
