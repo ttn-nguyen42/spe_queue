@@ -6,6 +6,7 @@ from servers import ReceptionServer, RoomServer
 from system_stats import SystemStatistics
 import random
 
+
 class System:
     """
     Manages a queue and its servers
@@ -68,7 +69,7 @@ class Reception(System):
             queue_params: pr.QueueParams,
             server_params: pr.ServerParams,
             rooms: list[System] = None,
-            hallway: System = None 
+            hallway: System = None
     ) -> None:
         self.rooms = rooms
         self.hallway = hallway
@@ -85,7 +86,6 @@ class Reception(System):
         return self.params.name
 
     def serve(self, visitor: Visitor, req: sp.Resource):
-        # MMN0208: Update service time
         service_start = self.env.now
         server = ReceptionServer(
             env=self.env,
@@ -127,6 +127,8 @@ class Reception(System):
                 if self.is_available():
                     # There's a server
                     req = self.available_servers.request()
+                    print(
+                        f"Reception servers count = {self.available_servers.count}/{self.available_servers.capacity}")
                     self.stats.update_service_requests()
                     visitor = self.find_visitor()
                     yield req
@@ -147,12 +149,10 @@ class Reception(System):
 
     def _idle(self):
         try:
-            # MMN0208: update idle_start, total_idle_count
             idle_start = self.env.now
             print(f"At time t = {idle_start}, Reception IDLE starts")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
             print(f"At time t = {idle_end}, Reception IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
@@ -174,21 +174,20 @@ class Reception(System):
         # Choose a random room to move visitor to
         # self.rooms
         # Room name: self.rooms[i].get_name()
-        
-        # Check which room available //Find first -> random that list
-        avail_room: list[System]=[]
+
+        # Check which room available
+        avail_room: list[System] = []
+
         for room in self.rooms:
             if room.is_available() and not room.is_full():
                 avail_room.append(room)
-                #add vistor to this room
+
         if len(avail_room) > 0:
             room_select = random.choice(avail_room)
-            print(room_select)
-            #Add to another room
             room_select.add_visitor(visitor=visitor)
             return
-        # If no room available, add to hallway
-        self.hallway.add_visitor(visitor=visitor) 
+
+        self.hallway.add_visitor(visitor=visitor)
         return
 
     def run(self):
@@ -236,12 +235,14 @@ class Room(System):
     def _active(self):
         try:
             active_start = self.env.now
-            print(f"At time t = {active_start}, Room {self.get_name()} ACTIVE starts")
+            print(
+                f"At time t = {active_start}, Room {self.get_name()} ACTIVE starts")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
             active_end = self.env.now
-            print(f"At time t = {active_end}, Room {self.get_name()} ACTIVE ends")
-            
+            print(
+                f"At time t = {active_end}, Room {self.get_name()} ACTIVE ends")
+
     # Serve visitor for visting the room
     def serve(self, visitor: Visitor, req: sp.Resource):
         server = RoomServer(
@@ -264,6 +265,8 @@ class Room(System):
             if not self.is_empty():
                 if self.is_available():
                     req = self.available_servers.request()
+                    print(
+                        f"Room {self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
                     self.stats.update_service_requests()
                     visitor = self.find_visitor()
                     yield req
@@ -284,12 +287,10 @@ class Room(System):
 
     def _idle(self):
         try:
-            # MMN0208: update idle_start
             idle_start = self.env.now
             print(f"At time t = {idle_start}, Room IDLE starts")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
             print(f"At time t = {idle_end}, Room IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
@@ -302,6 +303,7 @@ class Room(System):
         # self.hallway
         # This room name: self.get_name()
         # visitor.visited(room) //Not sure should have this or not?
+
     def run(self):
         self.env.process(self.schedule())
 
@@ -364,15 +366,13 @@ class Hallway(System):
             idle_timeout = self._idle()
             self.idle_proc = self.env.process(idle_timeout)
             yield self.idle_proc
-            
+
     def _idle(self):
         try:
-            # MMN0208: update idle_start, total_idle_count
             idle_start = self.env.now
             print(f"At time t = {idle_start}, Hallway IDLE starts")
             yield self.env.timeout(pr.SIM_DURATION)
         except sp.Interrupt:
-            # MMN0208: update idle_end, total_idle_time
             idle_end = self.env.now
             print(f"At time t = {idle_end}, Hallway IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
