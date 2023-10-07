@@ -344,11 +344,7 @@ class Room(System):
     def _move_to_hallway(self, visitor: Visitor):
         print(
             f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
-        # Add this room to list of visited place of visitor
-        # Move visitor to hallway
-        # self.hallway
-        # This room name: self.get_name()
-        # visitor.visited(room) //Not sure should have this or not?
+        self.hallway.add_visitor(visitor=visitor)
 
     def run(self):
         self.env.process(self.schedule())
@@ -406,10 +402,6 @@ class Hallway(System):
         if self.idle_proc is not None and not self.idle_proc.triggered:
             self.idle_proc.interrupt()
 
-    def stop_active(self):
-        if self.active_proc is not None and not self.active_proc.triggered:
-            self.active_proc.interrupt()
-
     # Should be doing nothing
     def serve(self, visitor: Visitor, req: sp.Resource):
         return
@@ -465,5 +457,4 @@ class Hallway(System):
 
     def stop(self):
         self.stop_idle()
-        self.stop_active()
         self.calculate_in_queue_wait_time()
