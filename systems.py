@@ -53,6 +53,7 @@ class Room(System):
         self.hallway.add_visitor(visitor=visitor)
 
     def run(self):
+        super().run()
         self.env.process(self.schedule())
 
 
@@ -112,6 +113,7 @@ class Hallway(System):
         return -1
 
     def run(self):
+        super().run()
         self.env.process(self.schedule())
 
 
@@ -177,4 +179,5 @@ class Reception(System):
         return
 
     def run(self):
+        super().run()
         self.env.process(self.schedule())

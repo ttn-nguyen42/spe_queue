@@ -48,13 +48,7 @@ class Visitor:
         for entry in self.queues_visited:
             total += entry.stats.get_wait_time()
         return total
-
-    def get_total_service_time(self) -> float:
-        total: float = 0.0
-        for entry in self.queues_visited:
-            total += entry.stats.get_service_time()
-        return total
-
+    
     def update_wait_time(self, id: str, end: float):
         for r in self.queues_visited:
             if r.id == id:

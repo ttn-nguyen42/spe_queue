@@ -33,8 +33,17 @@ class System:
         self.idle_proc = None
         self.is_idle = True
 
+        # MMN0208: server utilization
+        self.servers_usage = []
+
     def get_stats(self) -> SystemStatistics:
         return self.stats
+
+    # MMN0208: server utilization
+    def monitor_servers(self):
+        while True:
+            self.servers_usage.append(self.available_servers.count)
+            yield self.env.timeout(0.25)
 
     def get_name(self) -> str:
         return self.params.name
@@ -111,6 +120,7 @@ class System:
         remaining_visitors = self.queue.visitors
         self.stats.in_queue_at_end = len(remaining_visitors)
         for v in remaining_visitors:
+            v.update_wait_time(id=self.get_name(), end=self.env.now)
             self.stats.update_wait_time(
                 wait_time=v.get_wait_time(id=self.get_name()))
 
@@ -166,6 +176,8 @@ class System:
         pass
 
     def run(self):
+        # MMN0208: server utilization
+        self.env.process(self.monitor_servers())
         pass
 
     def stop(self):
