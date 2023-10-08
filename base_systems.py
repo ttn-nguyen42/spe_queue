@@ -1,4 +1,5 @@
 import simpy as sp
+import numpy as np
 import params as pr
 from visitor import Visitor, Entry, VisitorStatistics
 from servers import VisitorServer
@@ -124,11 +125,6 @@ class System:
         self.idle_proc = self.env.process(idle_timeout)
         yield self.idle_proc
 
-    def stop(self):
-        self.stop_idle()
-        self.stop_active()
-        self.calculate_in_queue_wait_time()
-
     def request_server(self):
         if not self.is_empty():
             if self.is_available():
@@ -171,3 +167,10 @@ class System:
 
     def run(self):
         pass
+
+    def stop(self):
+        self.stop_idle()
+        self.stop_active()
+        self.calculate_in_queue_wait_time()
+        self.stats.update_utilization(
+            np.mean(self.servers_usage), self.params.max_servers)
