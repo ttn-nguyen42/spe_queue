@@ -7,6 +7,10 @@ from typing import List
 import uuid
 from prettytable import PrettyTable
 import json
+import random
+import time
+
+random.seed(time.time())
 
 
 class Generator:
@@ -25,9 +29,12 @@ class Generator:
             interarrival = np.random.exponential(
                 self.params.mean_interarrival_time)
             yield self.env.timeout(interarrival)
-            print(f"At time t = {self.env.now}, Generate NEW_VISITOR")
-            self.reception.add_visitor(
-                visitor=Visitor(name=self._random_name()))
+            print(f"At time t = {self.env.now}, Generator NEW_VISITOR")
+            try:
+                self.reception.add_visitor(
+                    visitor=Visitor(name=self._random_name()))
+            except Exception:
+                print(f"Generator RECEPTION_FULL")
 
     def _random_name(self) -> str:
         return uuid.uuid4()
@@ -47,11 +54,12 @@ class Museum:
             env=self.env,
             params=pr.SystemParams(
                 name=hallway_cfg["name"],
-                max_servers=1,
+                max_servers=hallway_cfg["max_servers"],
             ),
             queue_params=pr.QueueParams(
                 max_queue_size=hallway_cfg["max_queue_size"]),
-            server_params=None,
+            server_params=pr.ServerParams(
+                mean_service_time=hallway_cfg["mean_service_time"]),
             rooms=[]
         )
 
@@ -95,13 +103,10 @@ class Museum:
         yield self.env.timeout(pr.SIM_DURATION)
         print(
             f"------------------------\nAt time t =  {self.env.now}, Museum CLOSES\n------------------------")
-        self.hallway.stop_idle()
-        self.hallway.stop_active()
-        self.reception.stop_idle()
-        self.reception.stop_active()
+        self.hallway.stop()
+        self.reception.stop()
         for r in self.rooms:
-            r.stop_idle()
-            r.stop_active()
+            r.stop()
         return
 
     def configure(self, config_path: str):
@@ -149,7 +154,7 @@ class Museum:
         print(
             f"------------------------\nSimulation time = {pr.SIM_DURATION}\n------------------------")
         tb = PrettyTable(["system_name", "total_idle_time",
-                         "avg_service_time", "avg_wait_time", "visitors"])
+                         "avg_service_time", "avg_wait_time", "visitors", "remaining_visitors"])
         tb.add_row(self.reception.get_stats().list_stats())
         tb.add_row(self.hallway.get_stats().list_stats(), divider=True)
         for r in self.rooms:
