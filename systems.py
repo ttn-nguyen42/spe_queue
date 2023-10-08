@@ -346,6 +346,12 @@ class Room(System):
             f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
         self.hallway.add_visitor(visitor=visitor)
 
+
+        visitor.visited(self)
+    
+        self.hallway.add_visitor(visitor=visitor)
+
+
     def run(self):
         self.env.process(self.schedule())
 
@@ -478,6 +484,12 @@ class Hallway(System):
         all_rooms[chosen].add_visitor(visitor=visitor)
         return
 
+        for index, room in enumerate(self.rooms):
+            if not visitor.has_visited(room):
+                return index
+            
+        return -1
+        
     def run(self):
         self.env.process(self.schedule())
 
