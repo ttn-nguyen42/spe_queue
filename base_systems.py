@@ -1,6 +1,6 @@
 import simpy as sp
 import numpy as np
-import params as pr
+from params import ServerParams, QueueParams, SystemParams, SIM_DURATION
 from visitor import Visitor, Entry, VisitorStatistics
 from servers import VisitorServer
 from qs import Queue
@@ -19,9 +19,9 @@ class System:
     def __init__(
         self,
         env: sp.Environment,
-        params: pr.SystemParams,
-        queue_params: pr.QueueParams,
-        server_params: pr.ServerParams,
+        params: SystemParams,
+        queue_params: QueueParams,
+        server_params: ServerParams,
     ) -> None:
         self.env = env
         self.params = params
@@ -101,7 +101,7 @@ class System:
             active_start = self.env.now
             print(
                 f"At time t = {active_start}, {self.get_name()} ACTIVE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
+            yield self.env.timeout(SIM_DURATION)
         except sp.Interrupt:
             active_end = self.env.now
             print(
@@ -111,7 +111,7 @@ class System:
         try:
             idle_start = self.env.now
             print(f"At time t = {idle_start}, {self.get_name()} IDLE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
+            yield self.env.timeout(SIM_DURATION)
         except sp.Interrupt:
             idle_end = self.env.now
             print(f"At time t = {idle_end}, {self.get_name()} IDLE ends")

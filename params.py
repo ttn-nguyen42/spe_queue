@@ -15,7 +15,6 @@ class QueueParams(object):
         max_queue_size: int,
     ) -> None:
         self.max_queue_size = max_queue_size
-        pass
 
 
 class GeneratorParams(object):
@@ -24,7 +23,6 @@ class GeneratorParams(object):
             mean_interarrival_time: int,
     ) -> None:
         self.mean_interarrival_time = mean_interarrival_time
-        pass
 
 
 class SystemParams(object):
@@ -35,4 +33,3 @@ class SystemParams(object):
     ) -> None:
         self.name = name
         self.max_servers = max_servers
-        pass

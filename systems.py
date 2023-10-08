@@ -1,6 +1,5 @@
 import simpy as sp
-import numpy as np
-import params as pr
+from params import ServerParams, QueueParams, SystemParams
 from visitor import Visitor, Entry, VisitorStatistics
 from servers import ReceptionServer, RoomServer, HallwayServer
 import random
@@ -11,9 +10,9 @@ class Room(System):
     def __init__(
             self,
             env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams,
             hallway: System = None) -> None:
         self.hallway = hallway
         super().__init__(env, params, queue_params, server_params)
@@ -61,9 +60,9 @@ class Hallway(System):
     def __init__(
             self,
             env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams,
             rooms: list[Room] = None) -> None:
         self.rooms = rooms
         super().__init__(env, params, queue_params, server_params)
@@ -121,9 +120,9 @@ class Reception(System):
     def __init__(
             self,
             env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams,
             rooms: list[Room] = None,
             hallway: Hallway = None
     ) -> None:
