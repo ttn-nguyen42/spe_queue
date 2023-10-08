@@ -3,27 +3,14 @@ from typing import List
 
 class VisitorStatistics:
     def __init__(self) -> None:
-        self.wait_time: float = 0.0
-        self.service_time: float = 0.0
-
         self.start_wait_time: float = 0.0
         self.end_wait_time: float = 0.0
-        pass
-
-    def set_wait_time(self, t: float):
-        self.wait_time = t
-
-    def set_service_time(self, t: float):
-        self.service_time = t
 
     def __str__(self) -> str:
-        return f"wait_time={self.wait_time} service_time={self.service_time} start_wait_time={self.start_wait_time} end_wait_time={self.end_wait_time}"
+        return f"wait_time={self.get_wait_time()} start_wait_time={self.start_wait_time} end_wait_time={self.end_wait_time}"
 
     def get_wait_time(self) -> str:
-        return self.wait_time
-
-    def get_service_time(self) -> str:
-        return self.service_time
+        return self.end_wait_time - self.start_wait_time
 
 
 class Entry:
@@ -72,7 +59,6 @@ class Visitor:
         for r in self.queues_visited:
             if r.id == id:
                 r.stats.end_wait_time = end
-                r.stats.set_wait_time(end - r.stats.start_wait_time)
                 print(f"STAT: {r.stats}")
                 return
 

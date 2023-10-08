@@ -18,7 +18,7 @@ class Generator:
         self,
         env: sp.Environment,
         params: pr.GeneratorParams,
-        reception: System,
+        reception: Reception,
     ) -> None:
         self.env = env
         self.params = params
