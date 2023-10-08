@@ -7,10 +7,10 @@ from qs import Queue
 from system_stats import SystemStatistics
 
 
-class SystemScheduleResult:
-    FOUND_VISITOR = 1,
-    NO_VISITOR = 2,
-    NO_SERVER = 3,
+# class SystemScheduleResult:
+#     FOUND_VISITOR = 1,
+#     NO_VISITOR = 2,
+#     NO_SERVER = 3,
 
 
 class System:
@@ -61,12 +61,12 @@ class System:
         visitor.queues_visited.append(ent)
 
         if self.is_idle:
-            self.stop_idle()
+            self._stop_idle()
 
         if self.is_available():
-            self.stop_active()
+            self._stop_active()
 
-    def find_visitor(self) -> Visitor:
+    def get_visitor(self) -> Visitor:
         try:
             return self.queue.dequeue()
         except Exception:
@@ -86,12 +86,12 @@ class System:
     def is_active(self) -> bool:
         return self.available_servers.count > 0
 
-    def stop_idle(self):
+    def _stop_idle(self):
         self.is_idle = False
         if self.idle_proc is not None and not self.idle_proc.triggered:
             self.idle_proc.interrupt()
 
-    def stop_active(self):
+    def _stop_active(self):
         if self.active_proc is not None and not self.active_proc.triggered:
             self.active_proc.interrupt()
 
@@ -116,7 +116,7 @@ class System:
             print(f"At time t = {idle_end}, {self.get_name()} IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
-    def calculate_in_queue_wait_time(self):
+    def _calculate_in_queue_wait_time(self):
         remaining_visitors = self.queue.visitors
         self.stats.in_queue_at_end = len(remaining_visitors)
         for v in remaining_visitors:
@@ -141,7 +141,7 @@ class System:
                 req = self.available_servers.request()
                 print(
                     f"{self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
-                visitor = self.find_visitor()
+                visitor = self.get_visitor()
                 self.schedule_update_stats(visitor=visitor)
                 return SystemScheduleResult.FOUND_VISITOR, visitor, req
             else:
@@ -159,7 +159,7 @@ class System:
 
         self.available_servers.release(request=req)
         if self.is_available():
-            self.stop_active()
+            self._stop_active()
 
     def schedule_update_stats(self, visitor: Visitor):
         self.stats.update_service_requests()
@@ -181,8 +181,8 @@ class System:
         pass
 
     def stop(self):
-        self.stop_idle()
-        self.stop_active()
-        self.calculate_in_queue_wait_time()
+        self._stop_idle()
+        self._stop_active()
+        self._calculate_in_queue_wait_time()
         self.stats.update_utilization(
             np.mean(self.servers_usage), self.params.max_servers)

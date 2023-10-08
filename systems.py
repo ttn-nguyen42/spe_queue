@@ -36,7 +36,7 @@ class Room(System):
                     yield req
                     self.env.process(self.serve(
                         visitor=visitor, req=req, server=server))
-                    # self._move_to_hallway(visitor=visitor)
+                    self._move_to_hallway(visitor=visitor)
                 case _:
                     if self.is_active():
                         yield from self.go_active()
@@ -64,11 +64,11 @@ class Hallway(System):
             params: pr.SystemParams,
             queue_params: pr.QueueParams,
             server_params: pr.ServerParams,
-            rooms: list[Room] = None) -> None:
+            rooms: list[System] = None) -> None:
         self.rooms = rooms
         super().__init__(env, params, queue_params, server_params)
 
-    def set_rooms(self, rooms: list[Room]):
+    def set_rooms(self, rooms: list[System]):
         self.rooms = rooms
         return self
 
@@ -124,18 +124,18 @@ class Reception(System):
             params: pr.SystemParams,
             queue_params: pr.QueueParams,
             server_params: pr.ServerParams,
-            rooms: list[Room] = None,
-            hallway: Hallway = None
+            rooms: list[System] = None,
+            hallway: System = None
     ) -> None:
         self.rooms = rooms
         self.hallway = hallway
         super().__init__(env, params, queue_params, server_params)
 
-    def set_rooms(self, rooms: list[Room]):
+    def set_rooms(self, rooms: list[System]):
         self.rooms = rooms
         return self
 
-    def set_hallway(self, hallway: Hallway):
+    def set_hallway(self, hallway: System):
         self.hallway = hallway
         return self
 
@@ -164,16 +164,16 @@ class Reception(System):
             f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
 
         # Check which room available
-        # avail_room: list[System] = []
+        avail_room: list[System] = []
 
-        # for room in self.rooms:
-        #     if room.is_available() and not room.is_full():
-        #         avail_room.append(room)
+        for room in self.rooms:
+            if room.is_available() and not room.is_full():
+                avail_room.append(room)
 
-        # if len(avail_room) > 0:
-        #     room_select = random.choice(avail_room)
-        #     room_select.add_visitor(visitor=visitor)
-        #     return
+        if len(avail_room) > 0:
+            room_select = random.choice(avail_room)
+            room_select.add_visitor(visitor=visitor)
+            return
 
         self.hallway.add_visitor(visitor=visitor)
         return
