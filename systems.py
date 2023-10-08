@@ -64,7 +64,7 @@ class Hallway(System):
             params: pr.SystemParams,
             queue_params: pr.QueueParams,
             server_params: pr.ServerParams,
-            rooms: list[System] = None) -> None:
+            rooms: list[Room] = None) -> None:
         self.rooms = rooms
         super().__init__(env, params, queue_params, server_params)
 
@@ -124,18 +124,18 @@ class Reception(System):
             params: pr.SystemParams,
             queue_params: pr.QueueParams,
             server_params: pr.ServerParams,
-            rooms: list[System] = None,
-            hallway: System = None
+            rooms: list[Room] = None,
+            hallway: Hallway = None
     ) -> None:
         self.rooms = rooms
         self.hallway = hallway
         super().__init__(env, params, queue_params, server_params)
 
-    def set_rooms(self, rooms: list[System]):
+    def set_rooms(self, rooms: list[Room]):
         self.rooms = rooms
         return self
 
-    def set_hallway(self, hallway: System):
+    def set_hallway(self, hallway: Hallway):
         self.hallway = hallway
         return self
 

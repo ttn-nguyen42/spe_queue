@@ -5,12 +5,13 @@ from visitor import Visitor, Entry, VisitorStatistics
 from servers import VisitorServer
 from qs import Queue
 from system_stats import SystemStatistics
+from simpy.resources.resource import Request
 
 
-# class SystemScheduleResult:
-#     FOUND_VISITOR = 1,
-#     NO_VISITOR = 2,
-#     NO_SERVER = 3,
+class SystemScheduleResult:
+    FOUND_VISITOR = 1,
+    NO_VISITOR = 2,
+    NO_SERVER = 3,
 
 
 class System:
@@ -40,7 +41,7 @@ class System:
         return self.stats
 
     # MMN0208: server utilization
-    def monitor_servers(self):
+    def _monitor_servers(self):
         while True:
             self.servers_usage.append(self.available_servers.count)
             yield self.env.timeout(0.25)
@@ -66,7 +67,7 @@ class System:
         if self.is_available():
             self._stop_active()
 
-    def get_visitor(self) -> Visitor:
+    def _get_visitor(self) -> Visitor:
         try:
             return self.queue.dequeue()
         except Exception:
@@ -124,25 +125,25 @@ class System:
             self.stats.update_wait_time(
                 wait_time=v.get_wait_time(id=self.get_name()))
 
-    def go_active(self):
+    def go_active(self) -> sp.Process:
         active_state = self._active()
         self.active_proc = self.env.process(active_state)
         yield self.active_proc
 
-    def go_idle(self):
+    def go_idle(self) -> sp.Process:
         self.is_idle = True
         idle_timeout = self._idle()
         self.idle_proc = self.env.process(idle_timeout)
         yield self.idle_proc
 
-    def request_server(self):
+    def request_server(self) -> (SystemScheduleResult, Visitor, Request):
         if not self.is_empty():
             if self.is_available():
                 req = self.available_servers.request()
                 print(
                     f"{self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
-                visitor = self.get_visitor()
-                self.schedule_update_stats(visitor=visitor)
+                visitor = self._get_visitor()
+                self._schedule_update_stats(visitor=visitor)
                 return SystemScheduleResult.FOUND_VISITOR, visitor, req
             else:
                 return SystemScheduleResult.NO_SERVER, None, None
@@ -151,7 +152,7 @@ class System:
                 f"At time t = {self.env.now}, {self.get_name()} NO_VISITOR idle start")
             return SystemScheduleResult.NO_VISITOR, None, None
 
-    def serve(self, visitor: Visitor, req: sp.Resource, server: VisitorServer):
+    def serve(self, visitor: Visitor, req: sp.Resource, server: VisitorServer) -> sp.Event:
         service_start = self.env.now
         yield from server.process(visitor=visitor)
         service_end = self.env.now
@@ -161,7 +162,7 @@ class System:
         if self.is_available():
             self._stop_active()
 
-    def schedule_update_stats(self, visitor: Visitor):
+    def _schedule_update_stats(self, visitor: Visitor):
         self.stats.update_service_requests()
         self.stats.update_visitor_count()
 
@@ -177,7 +178,7 @@ class System:
 
     def run(self):
         # MMN0208: server utilization
-        self.env.process(self.monitor_servers())
+        self.env.process(self._monitor_servers())
         pass
 
     def stop(self):
