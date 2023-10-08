@@ -1,4 +1,5 @@
 import simpy as sp
+import numpy as np
 import params as pr
 from visitor import Visitor, Entry, VisitorStatistics
 from qs import Queue
@@ -25,7 +26,9 @@ class System:
         self.queue = Queue(params=queue_params)
         self.available_servers = sp.Resource(
             self.env, capacity=params.max_servers)
+        self.servers_usage = []
         self.stats = SystemStatistics(system_name=self.params.name)
+        self.env.process(self.monitor_servers())
         pass
 
     def get_stats(self) -> SystemStatistics:
@@ -59,6 +62,12 @@ class System:
 
     def schedule(self):
         pass
+    
+    def monitor_servers(self):
+        while True:
+            self.servers_usage.append(self.available_servers.count)
+            yield self.env.timeout(0.25)
+        
 
 
 class Reception(System):
@@ -220,6 +229,7 @@ class Reception(System):
         self.stop_idle()
         self.stop_active()
         self.calculate_in_queue_wait_time()
+        self.stats.update_utilization(np.mean(self.servers_usage), self.params.max_servers)
 
 
 class Room(System):
@@ -366,6 +376,7 @@ class Room(System):
         self.stop_idle()
         self.stop_active()
         self.calculate_in_queue_wait_time()
+        self.stats.update_utilization(np.mean(self.servers_usage), self.params.max_servers)
 
 
 class Hallway(System):
@@ -519,3 +530,4 @@ class Hallway(System):
         self.stop_idle()
         self.stop_active()
         self.calculate_in_queue_wait_time()
+        self.stats.update_utilization(np.mean(self.servers_usage), self.params.max_servers)

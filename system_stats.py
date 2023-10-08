@@ -11,6 +11,8 @@ class SystemStatistics:
         self.total_visitor_count: int = 0
 
         self.in_queue_at_end: int = 0
+        
+        self.utilization: float = 0.0
         pass
 
     def __str__(self) -> str:
@@ -47,6 +49,12 @@ class SystemStatistics:
 
     def update_wait_time(self, wait_time: float):
         self.total_wait_time += wait_time
+        return
+        
+    def update_utilization(self, avg_servers_usage: float, max_servers: int):
+        self.utilization = avg_servers_usage / max_servers * 100
+        return
+        
 
     def list_stats(self) -> list:
         stats = []
@@ -56,6 +64,7 @@ class SystemStatistics:
         stats.append(round(self.avg_wait_time(), 5))
         stats.append(self.total_visitor_count)
         stats.append(self.in_queue_at_end)
+        stats.append(self.utilization)
         return stats
 
 

@@ -154,7 +154,7 @@ class Museum:
         print(
             f"------------------------\nSimulation time = {pr.SIM_DURATION}\n------------------------")
         tb = PrettyTable(["system_name", "total_idle_time",
-                         "avg_service_time", "avg_wait_time", "visitors", "remaining_visitors"])
+                         "avg_service_time", "avg_wait_time", "visitors", "remaining_visitors", "servers_utilization"])
         tb.add_row(self.reception.get_stats().list_stats())
         tb.add_row(self.hallway.get_stats().list_stats(), divider=True)
         for r in self.rooms:

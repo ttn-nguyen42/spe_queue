@@ -1,5 +1,5 @@
 {
-  "simulation_time": 1000,
+  "simulation_time": 100,
   "generator": {
     "mean_interarrival_time": 2
   },
@@ -12,7 +12,7 @@
   "reception": {
     "name": "reception-0",
     "max_queue_size": 50000,
-    "max_servers": 1000,
+    "max_servers": 1,
     "mean_service_time": 5
   },
   "rooms": [
