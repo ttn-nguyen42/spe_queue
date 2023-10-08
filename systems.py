@@ -76,7 +76,6 @@ class Hallway(System):
             res, visitor, req = self.request_server()
             match res:
                 case SystemScheduleResult.FOUND_VISITOR:
-                    # self._move_to_hallway(visitor=visitor)
                     server = HallwayServer(
                         env=self.env,
                         params=self.server_params,
@@ -84,6 +83,7 @@ class Hallway(System):
                     yield req
                     self.env.process(self.serve(
                         visitor=visitor, req=req, server=server))
+                    self._send_to_unvisited_room(visitor=visitor)
                 case _:
                     if self.is_active():
                         yield from self.go_active()
@@ -148,7 +148,7 @@ class Reception(System):
                     yield req
                     self.env.process(self.serve(
                         visitor=visitor, req=req, server=server))
-                    # self._move_to_hallway(visitor=visitor)
+                    self._move_to_room(visitor=visitor)
                 case _:
                     if self.is_active():
                         yield from self.go_active()
@@ -159,10 +159,6 @@ class Reception(System):
     def _move_to_room(self, visitor: Visitor):
         print(
             f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
-
-        # Choose a random room to move visitor to
-        # self.rooms
-        # Room name: self.rooms[i].get_name()
 
         # Check which room available
         # avail_room: list[System] = []
