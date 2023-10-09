@@ -4,7 +4,6 @@ import simpy as sp
 import params as pr
 import numpy as np
 
-
 class VisitorServer:
     """
     Process visitor
@@ -13,7 +12,7 @@ class VisitorServer:
     def __init__(self) -> None:
         pass
 
-    def process(self, visitor: Visitor):
+    def process(self, visitor: Visitor) -> sp.Event:
         pass
 
     def stop(self):

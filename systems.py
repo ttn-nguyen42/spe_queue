@@ -1,6 +1,5 @@
 import simpy as sp
-import numpy as np
-import params as pr
+from params import ServerParams, QueueParams, SystemParams
 from visitor import Visitor, Entry, VisitorStatistics
 from servers import ReceptionServer, RoomServer, HallwayServer
 import random
@@ -11,9 +10,9 @@ class Room(System):
     def __init__(
             self,
             env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams,
             hallway: System = None) -> None:
         self.hallway = hallway
         super().__init__(env, params, queue_params, server_params)
@@ -36,7 +35,7 @@ class Room(System):
                     yield req
                     self.env.process(self.serve(
                         visitor=visitor, req=req, server=server))
-                    # self._move_to_hallway(visitor=visitor)
+                    self._move_to_hallway(visitor=visitor)
                 case _:
                     if self.is_active():
                         yield from self.go_active()
@@ -61,14 +60,14 @@ class Hallway(System):
     def __init__(
             self,
             env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams,
             rooms: list[Room] = None) -> None:
         self.rooms = rooms
         super().__init__(env, params, queue_params, server_params)
 
-    def set_rooms(self, rooms: list[Room]):
+    def set_rooms(self, rooms: list[System]):
         self.rooms = rooms
         return self
 
@@ -121,9 +120,9 @@ class Reception(System):
     def __init__(
             self,
             env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams,
             rooms: list[Room] = None,
             hallway: Hallway = None
     ) -> None:
@@ -164,16 +163,16 @@ class Reception(System):
             f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
 
         # Check which room available
-        # avail_room: list[System] = []
+        avail_room: list[System] = []
 
-        # for room in self.rooms:
-        #     if room.is_available() and not room.is_full():
-        #         avail_room.append(room)
+        for room in self.rooms:
+            if room.is_available() and not room.is_full():
+                avail_room.append(room)
 
-        # if len(avail_room) > 0:
-        #     room_select = random.choice(avail_room)
-        #     room_select.add_visitor(visitor=visitor)
-        #     return
+        if len(avail_room) > 0:
+            room_select = random.choice(avail_room)
+            room_select.add_visitor(visitor=visitor)
+            return
 
         self.hallway.add_visitor(visitor=visitor)
         return

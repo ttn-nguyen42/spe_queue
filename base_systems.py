@@ -1,10 +1,11 @@
 import simpy as sp
 import numpy as np
-import params as pr
+from params import ServerParams, QueueParams, SystemParams, SIM_DURATION
 from visitor import Visitor, Entry, VisitorStatistics
 from servers import VisitorServer
 from qs import Queue
 from system_stats import SystemStatistics
+from simpy.resources.resource import Request
 
 
 class SystemScheduleResult:
@@ -18,9 +19,9 @@ class System:
     def __init__(
         self,
         env: sp.Environment,
-        params: pr.SystemParams,
-        queue_params: pr.QueueParams,
-        server_params: pr.ServerParams,
+        params: SystemParams,
+        queue_params: QueueParams,
+        server_params: ServerParams,
     ) -> None:
         self.env = env
         self.params = params
@@ -40,7 +41,7 @@ class System:
         return self.stats
 
     # MMN0208: server utilization
-    def monitor_servers(self):
+    def _monitor_servers(self):
         while True:
             self.servers_usage.append(self.available_servers.count)
             yield self.env.timeout(0.25)
@@ -61,12 +62,12 @@ class System:
         visitor.queues_visited.append(ent)
 
         if self.is_idle:
-            self.stop_idle()
+            self._stop_idle()
 
         if self.is_available():
-            self.stop_active()
+            self._stop_active()
 
-    def find_visitor(self) -> Visitor:
+    def _get_visitor(self) -> Visitor:
         try:
             return self.queue.dequeue()
         except Exception:
@@ -86,12 +87,12 @@ class System:
     def is_active(self) -> bool:
         return self.available_servers.count > 0
 
-    def stop_idle(self):
+    def _stop_idle(self):
         self.is_idle = False
         if self.idle_proc is not None and not self.idle_proc.triggered:
             self.idle_proc.interrupt()
 
-    def stop_active(self):
+    def _stop_active(self):
         if self.active_proc is not None and not self.active_proc.triggered:
             self.active_proc.interrupt()
 
@@ -100,7 +101,7 @@ class System:
             active_start = self.env.now
             print(
                 f"At time t = {active_start}, {self.get_name()} ACTIVE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
+            yield self.env.timeout(SIM_DURATION)
         except sp.Interrupt:
             active_end = self.env.now
             print(
@@ -110,13 +111,13 @@ class System:
         try:
             idle_start = self.env.now
             print(f"At time t = {idle_start}, {self.get_name()} IDLE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
+            yield self.env.timeout(SIM_DURATION)
         except sp.Interrupt:
             idle_end = self.env.now
             print(f"At time t = {idle_end}, {self.get_name()} IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
-    def calculate_in_queue_wait_time(self):
+    def _calculate_in_queue_wait_time(self):
         remaining_visitors = self.queue.visitors
         self.stats.in_queue_at_end = len(remaining_visitors)
         for v in remaining_visitors:
@@ -124,25 +125,25 @@ class System:
             self.stats.update_wait_time(
                 wait_time=v.get_wait_time(id=self.get_name()))
 
-    def go_active(self):
+    def go_active(self) -> sp.Process:
         active_state = self._active()
         self.active_proc = self.env.process(active_state)
         yield self.active_proc
 
-    def go_idle(self):
+    def go_idle(self) -> sp.Process:
         self.is_idle = True
         idle_timeout = self._idle()
         self.idle_proc = self.env.process(idle_timeout)
         yield self.idle_proc
 
-    def request_server(self):
+    def request_server(self) -> (SystemScheduleResult, Visitor, Request):
         if not self.is_empty():
             if self.is_available():
                 req = self.available_servers.request()
                 print(
                     f"{self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
-                visitor = self.find_visitor()
-                self.schedule_update_stats(visitor=visitor)
+                visitor = self._get_visitor()
+                self._schedule_update_stats(visitor=visitor)
                 return SystemScheduleResult.FOUND_VISITOR, visitor, req
             else:
                 return SystemScheduleResult.NO_SERVER, None, None
@@ -151,7 +152,7 @@ class System:
                 f"At time t = {self.env.now}, {self.get_name()} NO_VISITOR idle start")
             return SystemScheduleResult.NO_VISITOR, None, None
 
-    def serve(self, visitor: Visitor, req: sp.Resource, server: VisitorServer):
+    def serve(self, visitor: Visitor, req: sp.Resource, server: VisitorServer) -> sp.Event:
         service_start = self.env.now
         yield from server.process(visitor=visitor)
         service_end = self.env.now
@@ -159,9 +160,9 @@ class System:
 
         self.available_servers.release(request=req)
         if self.is_available():
-            self.stop_active()
+            self._stop_active()
 
-    def schedule_update_stats(self, visitor: Visitor):
+    def _schedule_update_stats(self, visitor: Visitor):
         self.stats.update_service_requests()
         self.stats.update_visitor_count()
 
@@ -177,12 +178,12 @@ class System:
 
     def run(self):
         # MMN0208: server utilization
-        self.env.process(self.monitor_servers())
+        self.env.process(self._monitor_servers())
         pass
 
     def stop(self):
-        self.stop_idle()
-        self.stop_active()
-        self.calculate_in_queue_wait_time()
+        self._stop_idle()
+        self._stop_active()
+        self._calculate_in_queue_wait_time()
         self.stats.update_utilization(
             np.mean(self.servers_usage), self.params.max_servers)

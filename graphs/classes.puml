@@ -1,0 +1,181 @@
+    @startuml classes
+!theme plain
+    set namespaceSeparator none
+    class "Entry" as visitor.Entry {
+    id : str
+    stats
+    }
+    class "Generator" as main.Generator {
+    env : Environment
+    params
+    reception
+    generate()
+    run()
+    }
+    class "GeneratorParams" as params.GeneratorParams {
+    mean_interarrival_time : int
+    }
+    class "Hallway" as systems.Hallway {
+    rooms : list[Room]
+    run()
+    schedule()
+    set_rooms(rooms: list[System])
+    }
+    class "HallwayServer" as servers.HallwayServer {
+    env : Environment
+    params
+    process(visitor: Visitor)
+    stop()
+    }
+    class "Museum" as main.Museum {
+    dat : NoneType
+    env : Environment
+    generator
+    hallway
+    reception
+    rooms : list
+    close()
+    configure(config_path: str)
+    open()
+    stats()
+    }
+    class "Queue" as qs.Queue {
+    params
+    visitors : List[Visitor]
+    capacity()
+    dequeue() -> Visitor
+    enqueue(visitor: Visitor)
+    is_empty()
+    is_full()
+    }
+    class "QueueParams" as params.QueueParams {
+    max_queue_size : int
+    }
+    class "Reception" as systems.Reception {
+    hallway : Hallway
+    rooms : list[Room]
+    run()
+    schedule()
+    set_hallway(hallway: Hallway)
+    set_rooms(rooms: list[Room])
+    }
+    class "ReceptionServer" as servers.ReceptionServer {
+    env : Environment
+    params
+    process(visitor: Visitor)
+    stop()
+    }
+    class "Room" as systems.Room {
+    hallway : Hallway
+    run()
+    schedule()
+    set_hallway(hallway: Hallway)
+    }
+    class "RoomServer" as servers.RoomServer {
+    env : Environment
+    params
+    process(visitor: Visitor)
+    stop()
+    }
+    class "ServerParams" as params.ServerParams {
+    mean_service_time : int
+    }
+    class "System" as base_systems.System {
+    active_proc : NoneType
+    available_servers : Resource
+    env : Environment
+    idle_proc : NoneType
+    is_idle : bool
+    params
+    queue
+    server_params
+    servers_usage : list
+    stats
+    add_visitor(visitor: Visitor)
+    get_name() -> str
+    get_stats() -> SystemStatistics
+    go_active() -> sp.Process
+    go_idle() -> sp.Process
+    is_active() -> bool
+    is_available() -> bool
+    is_empty() -> bool
+    is_full() -> bool
+    request_server() -> (SystemScheduleResult, Visitor, Request)
+    run()
+    {abstract}schedule()
+    serve(visitor: Visitor, req: sp.Resource, server: VisitorServer) -> sp.Event
+    stop()
+    }
+    class "SystemParams" as params.SystemParams {
+    max_servers : int
+    name : str
+    }
+    class "SystemScheduleResult" as base_systems.SystemScheduleResult {
+    FOUND_VISITOR : tuple
+    NO_SERVER : tuple
+    NO_VISITOR : tuple
+    }
+    class "SystemStatistics" as system_stats.SystemStatistics {
+    in_queue_at_end : int
+    system_name : str
+    total_idle_time : float
+    total_service_requests : int
+    total_service_time : float
+    total_visitor_count : int
+    total_wait_time : float
+    utilization : float
+    avg_service_time() -> float
+    avg_wait_time() -> float
+    list_stats() -> list
+    set_in_queue_at_end(amount: int)
+    update_idle_time(idle_time: float)
+    update_service_requests()
+    update_service_time(service_time: float)
+    update_utilization(avg_servers_usage: float, max_servers: int)
+    update_visitor_count()
+    update_wait_time(wait_time: float)
+    }
+    class "Visitor" as visitor.Visitor {
+    name : str
+    queues_visited : List[Entry]
+    get_name() -> str
+    get_total_wait_time() -> float
+    get_wait_time(id: str)
+    has_visited(queue_id: str)
+    set_wait_start(at: float)
+    started_waiting_at(id: str) -> float
+    update_wait_time(id: str, end: float)
+    visited(queue_id: str)
+    }
+    class "VisitorServer" as servers.VisitorServer {
+    {abstract}process(visitor: Visitor) -> sp.Event
+    {abstract}stop()
+    }
+    class "VisitorStatistics" as visitor.VisitorStatistics {
+    end_wait_time : float
+    start_wait_time : float
+    get_wait_time() -> str
+    }
+    servers.HallwayServer --|> servers.VisitorServer
+    servers.ReceptionServer --|> servers.VisitorServer
+    servers.RoomServer --|> servers.VisitorServer
+    systems.Hallway --|> base_systems.System
+    systems.Reception --|> base_systems.System
+    systems.Room --|> base_systems.System
+    main.Generator --* main.Museum : generator
+    qs.Queue --* base_systems.System : queue
+    system_stats.SystemStatistics --* base_systems.System : stats
+    systems.Hallway --* main.Museum : hallway
+    systems.Reception --* main.Museum : reception
+    systems.Hallway --o systems.Room : hallway
+    params.GeneratorParams --o main.Generator : params
+    params.QueueParams --o qs.Queue : params
+    params.ServerParams --o base_systems.System : server_params
+    params.ServerParams --o servers.HallwayServer : params
+    params.ServerParams --o servers.ReceptionServer : params
+    params.ServerParams --o servers.RoomServer : params
+    params.SystemParams --o base_systems.System : params
+    systems.Hallway --o systems.Reception : hallway
+    systems.Reception --o main.Generator : reception
+    visitor.VisitorStatistics --o visitor.Entry : stats
+    @enduml

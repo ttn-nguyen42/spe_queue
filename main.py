@@ -13,6 +13,39 @@ import time
 random.seed(time.time())
 
 
+class GeneratorStatistics:
+    def __init__(self, env: sp.Environment) -> None:
+        self.env = env
+
+        self.reception_overflow_count: int = 0
+        self.total_generated: int = 0
+        self.total_interarrival_time: float = 0.0
+
+    def add_overflow_count(self):
+        self.reception_overflow_count += 1
+
+    def add_total_generated(self):
+        self.total_generated += 1
+
+    def avg_interarrival_time(self) -> float:
+        if self.total_generated == 0:
+            return 0.0
+        return self.total_interarrival_time / self.total_generated
+
+    def update_interarrival_time(self, last_time: float):
+        self.total_interarrival_time += last_time
+
+    def list_stats(self) -> List:
+        return [self.reception_overflow_count, self.total_generated]
+
+    def __str__(self) -> str:
+        return f"""
+total_generated: {self.total_generated}
+reception_overflow_count: {self.reception_overflow_count}
+avg_interarrival_time: {round(self.avg_interarrival_time(), 5)}
+"""
+
+
 class Generator:
     def __init__(
         self,
@@ -23,6 +56,7 @@ class Generator:
         self.env = env
         self.params = params
         self.reception = reception
+        self.stats = GeneratorStatistics(env=self.env)
 
     def generate(self):
         while True:
@@ -30,14 +64,21 @@ class Generator:
                 self.params.mean_interarrival_time)
             yield self.env.timeout(interarrival)
             print(f"At time t = {self.env.now}, Generator NEW_VISITOR")
-            try:
-                self.reception.add_visitor(
-                    visitor=Visitor(name=self._random_name()))
-            except Exception:
+            self.stats.update_interarrival_time(last_time=interarrival)
+            self.stats.add_total_generated()
+            if self.reception.is_full():
+                self.stats.add_overflow_count()
                 print(f"Generator RECEPTION_FULL")
+                continue
+            
+            self.reception.add_visitor(
+                visitor=Visitor(name=self._random_name()))
 
     def _random_name(self) -> str:
         return uuid.uuid4()
+
+    def get_stats(self) -> GeneratorStatistics:
+        return self.stats
 
     def run(self):
         self.env.process(self.generate())
@@ -154,13 +195,18 @@ class Museum:
         print(
             f"------------------------\nSimulation time = {pr.SIM_DURATION}\n------------------------")
         tb = PrettyTable(["system_name", "total_idle_time",
-                         "avg_service_time", "avg_wait_time", "visitors", "remaining_visitors", "servers_utilization"])
+                         "avg_service_time", "avg_wait_time", "processed_visitors", "remaining_visitors", "utilization"])
         tb.add_row(self.reception.get_stats().list_stats())
         tb.add_row(self.hallway.get_stats().list_stats(), divider=True)
         for r in self.rooms:
             tb.add_row(r.get_stats().list_stats())
         tb.align["system_name"] = "l"
+
         print(tb)
+
+        print(
+            f"------------------------\nGenerator statistics ------------------------")
+        print(self.generator.get_stats())
 
 
 if __name__ == "__main__":

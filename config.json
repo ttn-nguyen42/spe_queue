@@ -7,7 +7,7 @@
     "name": "hallway-0",
     "max_queue_size": 1000000,
     "mean_service_time": 5,
-    "max_servers": 1000
+    "max_servers": 1
   },
   "reception": {
     "name": "reception-0",
