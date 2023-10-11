@@ -1,11 +1,12 @@
 import simpy as sp
 import numpy as np
 from params import ServerParams, QueueParams, SystemParams, SIM_DURATION
-from visitor import Visitor, Entry, VisitorStatistics
+from visitor import Visitor, VisitorStatistics
 from servers import VisitorServer
 from qs import Queue
 from system_stats import SystemStatistics
 from simpy.resources.resource import Request
+from typing import Tuple
 
 
 class SystemScheduleResult:
@@ -53,13 +54,9 @@ class System:
         self.queue.enqueue(visitor=visitor)
 
         stats = VisitorStatistics()
-        ent = Entry(
-            id=self.get_name(),
-            stats=stats,
-        )
         stats.start_wait_time = self.env.now
 
-        visitor.queues_visited.append(ent)
+        visitor.queues_visited[self.get_name()] = stats
 
         if self.is_idle:
             self._stop_idle()
@@ -86,6 +83,26 @@ class System:
 
     def is_active(self) -> bool:
         return self.available_servers.count > 0
+
+    def __len__(self) -> int:
+        return len(self.queue)
+
+    # Returns the ratio of:
+    # server/available_servers
+    # and current_visitors/queue_capacity
+    # for sorting
+    def availability(self, args = None) -> Tuple[float, float]:
+        server_ratio = 0.0
+        if self.available_servers.capacity == 0:
+            server_ratio = 0.0
+        else:
+            server_ratio = self.available_servers.count / self.available_servers.capacity
+        queue_ratio = 0.0
+        if self.queue.capacity == 0:
+            queue_ratio = 0.0
+        else:
+            queue_ratio = len(self.queue) / self.queue.capacity()
+        return (server_ratio, queue_ratio)
 
     def _stop_idle(self):
         self.is_idle = False
