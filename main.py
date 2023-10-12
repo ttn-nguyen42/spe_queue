@@ -205,7 +205,7 @@ class Museum:
         print(tb)
 
         print(
-            f"------------------------\nGenerator statistics ------------------------")
+            f"------------------------\nGenerator statistics\n------------------------")
         print(self.generator.get_stats())
 
 
