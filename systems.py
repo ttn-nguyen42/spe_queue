@@ -6,393 +6,319 @@ from servers import ReceptionServer, RoomServer
 from system_stats import SystemStatistics
 import random
 
-
-class System:
-    """
-    Manages a queue and its servers
-    """
-
-    def __init__(
-        self,
-        env: sp.Environment,
-        params: pr.SystemParams,
-        queue_params: pr.QueueParams,
-        server_params: pr.ServerParams,
-    ) -> None:
+class Check:
+    def __init__(self, env, name):
         self.env = env
-        self.params = params
-        self.server_params = server_params
-        self.queue = Queue(params=queue_params)
-        self.available_servers = sp.Resource(
-            self.env, capacity=params.max_servers)
-        self.stats = SystemStatistics(system_name=self.params.name)
-        pass
+        self.name = name
 
-    def get_stats(self) -> SystemStatistics:
-        return self.stats
+    def check(self, job):
+        passed = np.random.choice([True, False], p=[0.8, 0.2])
+        if passed:
+            print(f"At time t = {self.env.now}, Check {self.name}: Job {job.name} passed the check.")
+            return True
+        else:
+            print(f"At time t = {self.env.now}, Check {self.name}: Job {job.name} failed the check.")
+            return False
+        
+class ProductionLineA:
+    def __init__(self, env, max_queue_size, name, server, check):
+        self.env = env
+        self.max_queue_size = max_queue_size
+        self.name = name
+        self.server = server
+        self.check = check
+        self.jobs = []
 
-    def add_visitor(self, visitor: Visitor):
-        self.queue.enqueue(visitor=visitor)
+    def add_job(self, job):
+        if len(self.jobs) < self.max_queue_size:
+            self.jobs.append(job)
+            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} added to the queue.")
+        else:
+            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
 
-    def find_visitor(self) -> Visitor:
-        try:
-            return self.queue.dequeue()
-        except Exception:
+    def pop_job(self, job):
+        if self.jobs:
+            job = self.jobs.pop()
+            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} popped to the queue.")
+            return job
+        else:
+            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
+
+    def is_empty(self):
+        return len(self.jobs) == 0
+
+    def is_full(self):
+        return len(self.jobs) >= self.max_queue_size
+
+    def __len__(self):
+        return len(self.jobs)
+
+    def capacity(self):
+        return self.max_queue_size
+    
+class ProductionLineB:
+    def __init__(self, env, max_queue_size, name, server, check):
+        self.env = env
+        self.max_queue_size = max_queue_size
+        self.name = name
+        self.server = server
+        self.check = check
+        self.jobs = []
+
+    def add_job(self, job):
+        if len(self.jobs) < self.max_queue_size:
+            self.jobs.append(job)
+            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} added to the queue.")
+        else:
+            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
+
+    def pop_job(self, job):
+        if self.jobs:
+            job = self.jobs.pop()
+            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} popped to the queue.")
+            return job
+        else:
+            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
+
+    def is_empty(self):
+        return len(self.jobs) == 0
+
+    def is_full(self):
+        return len(self.jobs) >= self.max_queue_size
+
+    def __len__(self):
+        return len(self.jobs)
+
+    def capacity(self):
+        return self.max_queue_size
+    
+class AdvancedProductionLine:
+    def __init__(self, env, max_queue_size, name, server, check, production_lines):
+        self.env = env
+        self.max_queue_size = max_queue_size
+        self.name = name
+        self.server = server
+        self.check = check
+        self.production_lines = production_lines
+
+    def add_job(self, job, line_index):
+        if line_index < len(self.production_lines):
+            line = self.production_lines[line_index]
+            line.add_job(job)
+        else:
+            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
+
+    def pop_job(self, line_index):
+        if line_index < len(self.production_lines):
+            line = self.production_lines[line_index]
+            return line.pop_job()
+        else:
+            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
             return None
 
-    def is_empty(self) -> bool:
-        return self.queue.is_empty()
+    def is_empty(self, line_index):
+        if line_index < len(self.production_lines):
+            line = self.production_lines[line_index]
+            return line.is_empty()
+        else:
+            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
+            return True
 
-    def is_full(self) -> bool:
-        return self.queue.is_full()
+    def is_full(self, line_index):
+        if line_index < len(self.production_lines):
+            line = self.production_lines[line_index]
+            return line.is_full()
+        else:
+            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
+            return True
 
-    def is_available(self) -> bool:
-        cap = self.available_servers.capacity
-        in_use = self.available_servers.count
-        return in_use < cap
+    def __len__(self, line_index):
+        if line_index < len(self.production_lines):
+            line = self.production_lines[line_index]
+            return len(line)
+        else:
+            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
+            return 0
 
-    def is_active(self) -> bool:
-        return self.available_servers.count > 0
+    def capacity(self, line_index):
+        if line_index < len(self.production_lines):
+            line = self.production_lines[line_index]
+            return line.capacity()
+        else:
+            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
+            return 0
 
-    def serve(self, visitor: Visitor, req: sp.Resource):
-        pass
+# class Room(System):
+#     def __init__(
+#             self,
+#             env: sp.Environment,
+#             params: SystemParams,
+#             queue_params: QueueParams,
+#             server_params: ServerParams,
+#             hallway: System = None) -> None:
+#         self.hallway = hallway
+#         super().__init__(env, params, queue_params, server_params)
 
-    def schedule(self):
-        pass
+#     def set_hallway(self, hallway: System):
+#         self.hallway = hallway
+#         return self
 
+#     # Moves visitor to hallway
 
-class Reception(System):
-    def __init__(
-            self,
-            env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
-            rooms: list[System] = None,
-            hallway: System = None
-    ) -> None:
-        self.rooms = rooms
-        self.hallway = hallway
-        self.idle_proc = None
-        self.active_proc = None
-        self.is_idle = True
-        super().__init__(env, params, queue_params, server_params)
+#     def schedule(self):
+#         while True:
+#             res, visitor, req = self.request_server()
+#             match res:
+#                 case SystemScheduleResult.FOUND_VISITOR:
+#                     server = RoomServer(
+#                         env=self.env,
+#                         params=self.server_params,
+#                     )
+#                     yield req
+#                     self.env.process(self.serve(
+#                         visitor=visitor, req=req, server=server))
+#                     self._move_to_hallway(visitor=visitor)
+#                 case _:
+#                     if self.is_active():
+#                         yield from self.go_active()
+#                     else:
+#                         yield from self.go_idle()
 
-    def set_rooms(self, rooms: list[System]):
-        self.rooms = rooms
-        return self
+#     def _move_to_hallway(self, visitor: Visitor):
+#         print(
+#             f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
+#         self.hallway.add_visitor(visitor=visitor)
 
-    def get_name(self) -> str:
-        return self.params.name
+#         visitor.visited(self)
 
-    def serve(self, visitor: Visitor, req: sp.Resource):
-        service_start = self.env.now
-        server = ReceptionServer(
-            env=self.env,
-            params=self.server_params,
-        )
-        yield from server.process(visitor=visitor)
-        service_end = self.env.now
-        self.stats.update_service_time(service_end - service_start)
-        # Move from reception to a random room
-        self._move_to_room(visitor=visitor)
-        self.available_servers.release(request=req)
-        self.stats.update_visitor_count()
+#         self.hallway.add_visitor(visitor=visitor)
 
-        if self.is_available():
-            self.stop_active()
-
-    def add_visitor(self, visitor: Visitor):
-        super().add_visitor(visitor=visitor)
-
-        if self.is_idle:
-            self.stop_idle()
-
-        if self.is_available():
-            self.stop_active()
-
-    def stop_idle(self):
-        self.is_idle = False
-        if self.idle_proc is not None and not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
-
-    def stop_active(self):
-        if self.active_proc is not None and not self.active_proc.triggered:
-            self.active_proc.interrupt()
-
-    def schedule(self):
-        while True:
-            # There's a message
-            if not self.is_empty():
-                if self.is_available():
-                    # There's a server
-                    req = self.available_servers.request()
-                    print(
-                        f"Reception servers count = {self.available_servers.count}/{self.available_servers.capacity}")
-                    self.stats.update_service_requests()
-                    visitor = self.find_visitor()
-                    yield req
-                    self.env.process(self.serve(visitor=visitor, req=req))
-                    continue
-            else:
-                print(
-                    f"At time t = {self.env.now}, Reception NO_VISITOR idle start")
-            if self.is_active():
-                active_state = self._active()
-                self.active_proc = self.env.process(active_state)
-                yield self.active_proc
-            else:
-                self.is_idle = True
-                idle_timeout = self._idle()
-                self.idle_proc = self.env.process(idle_timeout)
-                yield self.idle_proc
-
-    def _idle(self):
-        try:
-            idle_start = self.env.now
-            print(f"At time t = {idle_start}, Reception IDLE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
-        except sp.Interrupt:
-            idle_end = self.env.now
-            print(f"At time t = {idle_end}, Reception IDLE ends")
-            self.stats.update_idle_time(idle_time=idle_end - idle_start)
-
-    def _active(self):
-        try:
-            active_start = self.env.now
-            print(f"At time t = {active_start}, Reception ACTIVE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
-        except sp.Interrupt:
-            active_end = self.env.now
-            print(f"At time t = {active_end}, Reception ACTIVE ends")
-
-    # Move visitor to room
-    def _move_to_room(self, visitor: Visitor):
-        print(
-            f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
-
-        # Choose a random room to move visitor to
-        # self.rooms
-        # Room name: self.rooms[i].get_name()
-
-        # Check which room available
-        avail_room: list[System] = []
-
-        for room in self.rooms:
-            if room.is_available() and not room.is_full():
-                avail_room.append(room)
-
-        if len(avail_room) > 0:
-            room_select = random.choice(avail_room)
-            room_select.add_visitor(visitor=visitor)
-            return
-
-        self.hallway.add_visitor(visitor=visitor)
-        return
-
-    def run(self):
-        self.env.process(self.schedule())
+#     def run(self):
+#         super().run()
+#         self.env.process(self.schedule())
 
 
-class Room(System):
-    def __init__(
-            self,
-            env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
-            hallway: System = None) -> None:
-        self.hallway = hallway
-        self.active_proc = None
-        self.idle_proc = None
-        super().__init__(env, params, queue_params, server_params)
+# class Hallway(System):
+#     def __init__(
+#             self,
+#             env: sp.Environment,
+#             params: SystemParams,
+#             queue_params: QueueParams,
+#             server_params: ServerParams,
+#             rooms: list[Room] = None) -> None:
+#         self.rooms = rooms
+#         super().__init__(env, params, queue_params, server_params)
 
-    def set_hallway(self, hallway: System):
-        self.hallway = hallway
-        return self
+#     def set_rooms(self, rooms: list[System]):
+#         self.rooms = rooms
+#         return self
 
-    def add_visitor(self, visitor: Visitor):
-        super().add_visitor(visitor=visitor)
+#     # Moves its visitor to rooms
+#     def schedule(self):
+#         while True:
+#             res, visitor, req = self.request_server()
+#             match res:
+#                 case SystemScheduleResult.FOUND_VISITOR:
+#                     server = HallwayServer(
+#                         env=self.env,
+#                         params=self.server_params,
+#                     )
+#                     yield req
+#                     self.env.process(self.serve(
+#                         visitor=visitor, req=req, server=server))
+#                     self._send_to_unvisited_room(visitor=visitor)
+#                 case _:
+#                     if self.is_active():
+#                         yield from self.go_active()
+#                     else:
+#                         yield from self.go_idle()
 
-        if self.is_idle:
-            self.stop_idle()
+#     def _send_to_unvisited_room(self, visitor: Visitor) -> int:
+#         # Find unvisited room and returns an index
+#         # self.rooms
+#         all_rooms = self.rooms
+#         available_rooms = []
+#         for i, r in enumerate(all_rooms):
+#             if visitor.has_visited(r.get_name()):
+#                 available_rooms.append(i)
+#         if len(available_rooms) == 0:
+#             print("Hallway VISITOR_DONE")
+#             return
+#         chosen = random.choice(available_rooms)
+#         all_rooms[chosen].add_visitor(visitor=visitor)
 
-        if self.is_available():
-            self.stop_active()
+#         for index, room in enumerate(self.rooms):
+#             if not visitor.has_visited(room):
+#                 return index
 
-    def get_name(self) -> str:
-        return self.params.name
+#         return -1
 
-    def stop_idle(self):
-        self.is_idle = False
-        if self.idle_proc is not None and not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
-
-    def stop_active(self):
-        if self.active_proc is not None and not self.active_proc.triggered:
-            self.active_proc.interrupt()
-
-    def _active(self):
-        try:
-            active_start = self.env.now
-            print(
-                f"At time t = {active_start}, Room {self.get_name()} ACTIVE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
-        except sp.Interrupt:
-            active_end = self.env.now
-            print(
-                f"At time t = {active_end}, Room {self.get_name()} ACTIVE ends")
-
-    # Serve visitor for visting the room
-    def serve(self, visitor: Visitor, req: sp.Resource):
-        server = RoomServer(
-            env=self.env,
-            params=self.server_params,
-        )
-        yield from server.process(visitor=visitor)
-        # Move to a hallway
-        self._move_to_hallway(visitor=visitor)
-        self.available_servers.release(request=req)
-
-        self.stats.update_visitor_count()
-
-        if self.is_available():
-            self.stop_active()
-
-    # Moves visitor to hallway
-    def schedule(self):
-        while True:
-            if not self.is_empty():
-                if self.is_available():
-                    req = self.available_servers.request()
-                    print(
-                        f"Room {self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
-                    self.stats.update_service_requests()
-                    visitor = self.find_visitor()
-                    yield req
-                    self.env.process(self.serve(visitor=visitor, req=req))
-                    continue
-            else:
-                print(
-                    f"At time t = {self.env.now}, Room {self.get_name()} NO_VISITOR idle start")
-            if self.is_active():
-                active_state = self._active()
-                self.active_proc = self.env.process(active_state)
-                yield self.active_proc
-            else:
-                self.is_idle = True
-                idle_timeout = self._idle()
-                self.idle_proc = self.env.process(idle_timeout)
-                yield self.idle_proc
-
-    def _idle(self):
-        try:
-            idle_start = self.env.now
-            print(f"At time t = {idle_start}, Room IDLE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
-        except sp.Interrupt:
-            idle_end = self.env.now
-            print(f"At time t = {idle_end}, Room IDLE ends")
-            self.stats.update_idle_time(idle_time=idle_end - idle_start)
-
-    def _move_to_hallway(self, visitor: Visitor):
-        print(
-            f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
-        # Add this room to list of visited place of visitor
-        # Move visitor to hallway
-        # self.hallway
-        # This room name: self.get_name()
-        # visitor.visited(room) //Not sure should have this or not?
+#     def run(self):
+#         super().run()
+#         self.env.process(self.schedule())
 
 
-        visitor.visited(self)
-    
-        self.hallway.add_visitor(visitor=visitor)
+# class Reception(System):
+#     def __init__(
+#             self,
+#             env: sp.Environment,
+#             params: SystemParams,
+#             queue_params: QueueParams,
+#             server_params: ServerParams,
+#             rooms: list[Room] = None,
+#             hallway: Hallway = None
+#     ) -> None:
+#         self.rooms = rooms
+#         self.hallway = hallway
+#         super().__init__(env, params, queue_params, server_params)
 
+#     def set_rooms(self, rooms: list[Room]):
+#         self.rooms = rooms
+#         return self
 
-    def run(self):
-        self.env.process(self.schedule())
+#     def set_hallway(self, hallway: Hallway):
+#         self.hallway = hallway
+#         return self
 
+#     def schedule(self):
+#         while True:
+#             res, visitor, req = self.request_server()
+#             match res:
+#                 case SystemScheduleResult.FOUND_VISITOR:
+#                     server = ReceptionServer(
+#                         env=self.env,
+#                         params=self.server_params,
+#                     )
+#                     yield req
+#                     self.env.process(self.serve(
+#                         visitor=visitor, req=req, server=server))
+#                     self._move_to_room(visitor=visitor)
+#                 case _:
+#                     if self.is_active():
+#                         yield from self.go_active()
+#                     else:
+#                         yield from self.go_idle()
 
-class Hallway(System):
-    def __init__(
-            self,
-            env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
-            rooms: list[Room] = None) -> None:
-        self.rooms = rooms
-        self.active_proc = None
-        self.idle_proc = None
-        super().__init__(env, params, queue_params, server_params)
+#     # Move visitor to room
+#     def _move_to_room(self, visitor: Visitor):
+#         print(
+#             f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
 
-    def set_rooms(self, rooms: list[Room]):
-        self.rooms = rooms
-        return self
+#         # Check which room available
+#         avail_room: list[System] = []
 
-    def get_name(self) -> str:
-        return self.params.name
+#         for room in self.rooms:
+#             if room.is_available() and not room.is_full():
+#                 avail_room.append(room)
 
-    def add_visitor(self, visitor: Visitor):
-        super().add_visitor(visitor=visitor)
+#         if len(avail_room) > 0:
+#             room_select = random.choice(avail_room)
+#             room_select.add_visitor(visitor=visitor)
+#             return
 
-        if self.is_idle:
-            self.stop_idle()
+#         self.hallway.add_visitor(visitor=visitor)
+#         return
 
-        if self.is_available():
-            self.stop_active()
-
-    def stop_idle(self):
-        self.is_idle = False
-        if self.idle_proc is not None and not self.idle_proc.triggered:
-            self.idle_proc.interrupt()
-
-    def stop_active(self):
-        if self.active_proc is not None and not self.active_proc.triggered:
-            self.active_proc.interrupt()
-
-    # Should be doing nothing
-    def serve(self, visitor: Visitor, req: sp.Resource):
-        return
-
-    # Moves its visitor to rooms
-    def schedule(self):
-        while True:
-            if not self.is_empty():
-                visitor = self.find_visitor()
-                where = self._find_unvisited_room(visitor=visitor)
-                room = self.rooms[where]
-                # Add visitor to that room
-                self.stats.update_visitor_count()
-                continue
-            else:
-                print(
-                    f"At time t = {self.env.now}, Hallway NO_VISITOR start idle")
-            idle_timeout = self._idle()
-            self.idle_proc = self.env.process(idle_timeout)
-            yield self.idle_proc
-
-    def _idle(self):
-        try:
-            idle_start = self.env.now
-            print(f"At time t = {idle_start}, Hallway IDLE starts")
-            yield self.env.timeout(pr.SIM_DURATION)
-        except sp.Interrupt:
-            idle_end = self.env.now
-            print(f"At time t = {idle_end}, Hallway IDLE ends")
-            self.stats.update_idle_time(idle_time=idle_end - idle_start)
-
-    def _find_unvisited_room(self, visitor: Visitor) -> int:
-        # Find unvisited room and returns an index
-        # self.rooms
-        # This hallway name: self.get_name()
-
-        for index, room in enumerate(self.rooms):
-            if not visitor.has_visited(room):
-                return index
-            
-        return -1
-        
-    def run(self):
-        self.env.process(self.schedule())
+#     def run(self):
+#         super().run()
+#         self.env.process(self.schedule())
