@@ -3,13 +3,6 @@ import simpy as sp
 import params as pr
 import numpy as np
 
-<<<<<<< Updated upstream
-
-class VisitorServer:
-    """
-    Process visitor
-    """
-=======
 class Server:
     def __init__(self, env, mean_service_time, name):
         self.env = env
@@ -25,34 +18,10 @@ class Server:
 #     """
 #     Process visitor
 #     """
->>>>>>> Stashed changes
 
 #     def __init__(self) -> None:
 #         pass
 
-<<<<<<< Updated upstream
-    def process(self, visitor: Visitor):
-        pass
-
-    def stop(self):
-        pass
-
-
-class ReceptionServer(VisitorServer):
-    def __init__(self, env: sp.Environment, params: pr.ServerParams) -> None:
-        self.env = env
-        self.params = params
-        super().__init__()
-
-    def process(self, visitor: Visitor):
-        print(f"At time t = {self.env.now}, ReceptionServer RECEIVE visitor = {visitor.name}")
-        service_time = max(1, np.random.exponential(
-            self.params.mean_service_time))
-        print(
-            f"At time t = {self.env.now}, ReceptionServer START visitor = {visitor.name}, duration = {service_time}")
-        yield self.env.timeout(service_time)
-        print(f"At time t = {self.env.now}, ReceptionServer FINISH visitor = {visitor.name}")
-=======
 #     def process(self, visitor: Visitor) -> sp.Event:
 #         pass
 
@@ -65,7 +34,6 @@ class ReceptionServer(VisitorServer):
 #         self.env = env
 #         self.params = params
 #         super().__init__()
->>>>>>> Stashed changes
 
 #     def process(self, visitor: Visitor):
 #         print(
@@ -81,26 +49,6 @@ class ReceptionServer(VisitorServer):
 #     def stop(self):
 #         return
 
-<<<<<<< Updated upstream
-class RoomServer(VisitorServer):
-    def __init__(
-        self,
-        env: sp.Environment,
-        params: pr.ServerParams,
-    ) -> None:
-        self.env = env
-        self.params = params
-        super().__init__()
-
-    def process(self, visitor: Visitor):
-        print(f"At time t = {self.env.now}, RoomServer RECEIVE visitor = {visitor.name}")
-        service_time = max(1, np.random.exponential(
-            self.params.mean_service_time,
-        ))
-        print(f"At time t = {self.env.now}, RoomServer START visitor = {visitor.name}, duration = {service_time}")
-        yield self.env.timeout(service_time)
-        print(f"At time t = {self.env.now}, RoomServer FINISH visitor = {visitor.name}")
-=======
 
 # class RoomServer(VisitorServer):
 #     def __init__(
@@ -149,7 +97,6 @@ class RoomServer(VisitorServer):
 #         yield self.env.timeout(service_time)
 #         print(
 #             f"At time t = {self.env.now}, HallwayServer FINISH visitor = {visitor.name}")
->>>>>>> Stashed changes
 
 #     def stop(self):
 #         return

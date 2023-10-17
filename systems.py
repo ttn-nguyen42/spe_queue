@@ -5,6 +5,7 @@ from qs import Queue
 from servers import ReceptionServer, RoomServer
 from system_stats import SystemStatistics
 import random
+from base_systems import System, SystemScheduleResult
 
 class Check:
     def __init__(self, env, name):
