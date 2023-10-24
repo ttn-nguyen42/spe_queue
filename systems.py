@@ -1,6 +1,6 @@
 import simpy as sp
 from params import ServerParams, QueueParams, SystemParams
-from visitor import Visitor, Entry, VisitorStatistics
+from visitor import Visitor
 from servers import ReceptionServer, RoomServer, HallwayServer
 import random
 from base_systems import System, SystemScheduleResult
@@ -46,10 +46,7 @@ class Room(System):
         print(
             f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
         self.hallway.add_visitor(visitor=visitor)
-
-        visitor.visited(self)
-
-        self.hallway.add_visitor(visitor=visitor)
+        visitor.visited(self.get_name())
 
     def run(self):
         super().run()
@@ -91,25 +88,20 @@ class Hallway(System):
                     else:
                         yield from self.go_idle()
 
-    def _send_to_unvisited_room(self, visitor: Visitor) -> int:
+    def _send_to_unvisited_room(self, visitor: Visitor):
         # Find unvisited room and returns an index
         # self.rooms
         all_rooms = self.rooms
         available_rooms = []
         for i, r in enumerate(all_rooms):
             if visitor.has_visited(r.get_name()):
-                available_rooms.append(i)
+                available_rooms.append(r)
         if len(available_rooms) == 0:
             print("Hallway VISITOR_DONE")
             return
-        chosen = random.choice(available_rooms)
-        all_rooms[chosen].add_visitor(visitor=visitor)
-
-        for index, room in enumerate(self.rooms):
-            if not visitor.has_visited(room):
-                return index
-
-        return -1
+        available_rooms.sort(key=self.availability)
+        available_rooms[0].add_visitor(visitor=visitor)
+        return
 
     def run(self):
         super().run()
@@ -170,8 +162,8 @@ class Reception(System):
                 avail_room.append(room)
 
         if len(avail_room) > 0:
-            room_select = random.choice(avail_room)
-            room_select.add_visitor(visitor=visitor)
+            avail_room.sort(key=self.availability)
+            avail_room[0].add_visitor(visitor=visitor)
             return
 
         self.hallway.add_visitor(visitor=visitor)

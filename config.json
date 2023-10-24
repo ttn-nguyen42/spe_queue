@@ -1,18 +1,18 @@
 {
-  "simulation_time": 100,
+  "simulation_time": 10000,
   "generator": {
     "mean_interarrival_time": 0.5
   },
   "hallway": {
     "name": "hallway-0",
     "max_queue_size": 1000000,
-    "mean_service_time": 5,
-    "max_servers": 1
+    "mean_service_time": 2,
+    "max_servers": 35
   },
   "reception": {
     "name": "reception-0",
     "max_queue_size": 50000,
-    "max_servers": 1,
+    "max_servers": 12,
     "mean_service_time": 5
   },
   "rooms": [
