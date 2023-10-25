@@ -2,152 +2,140 @@ import simpy as sp
 import params as pr
 from visitor import Visitor
 from qs import Queue
-from servers import ReceptionServer, RoomServer
+from servers import ProductionLineServer, WorkstationServer
 from system_stats import SystemStatistics
 import random
 from base_systems import System, SystemScheduleResult
 
-class Check:
-    def __init__(self, env, name):
-        self.env = env
+
+class Product:
+    def __init__(self, name: str, processing_time: float):
         self.name = name
+        self.processing_time = processing_time
 
-    def check(self, job):
-        passed = np.random.choice([True, False], p=[0.8, 0.2])
-        if passed:
-            print(f"At time t = {self.env.now}, Check {self.name}: Job {job.name} passed the check.")
-            return True
-        else:
-            print(f"At time t = {self.env.now}, Check {self.name}: Job {job.name} failed the check.")
-            return False
-        
-class ProductionLineA:
-    def __init__(self, env, max_queue_size, name, server, check):
-        self.env = env
-        self.max_queue_size = max_queue_size
-        self.name = name
-        self.server = server
-        self.check = check
-        self.jobs = []
+    def get_name(self) -> str:
+        return self.name
 
-    def add_job(self, job):
-        if len(self.jobs) < self.max_queue_size:
-            self.jobs.append(job)
-            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} added to the queue.")
-        else:
-            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
+    def get_processing_time(self) -> float:
+        return self.processing_time
 
-    def pop_job(self, job):
-        if self.jobs:
-            job = self.jobs.pop()
-            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} popped to the queue.")
-            return job
-        else:
-            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
 
-    def is_empty(self):
-        return len(self.jobs) == 0
+class ProductionLine(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: pr.SystemParams,
+            queue_params: pr.QueueParams,
+            server_params: pr.ServerParams,
+            workstations: list[pr.Workstation] = None) -> None:
+        self.workstations = workstations
+        super().__init__(env, params, queue_params, server_params)
 
-    def is_full(self):
-        return len(self.jobs) >= self.max_queue_size
+    def set_workstations(self, workstations: list[System]):
+        self.workstations = workstations
+        return self
 
-    def __len__(self):
-        return len(self.jobs)
+    # Moves product to next workstation
+    def schedule(self):
+        while True:
+            res, product, req = self.request_server()
+            match res:
+                case SystemScheduleResult.FOUND_PRODUCT:
+                    server = ProductionLineServer(
+                        env=self.env,
+                        params=self.server_params,
+                    )
+                    yield req
+                    self.env.process(self.serve(
+                        product=product, req=req, server=server))
+                    self._move_to_next_workstation(product=product)
+                case _:
+                    if self.is_active():
+                        yield from self.go_active()
+                    else:
+                        yield from self.go_idle()
 
-    def capacity(self):
-        return self.max_queue_size
-    
-class ProductionLineB:
-    def __init__(self, env, max_queue_size, name, server, check):
-        self.env = env
-        self.max_queue_size = max_queue_size
-        self.name = name
-        self.server = server
-        self.check = check
-        self.jobs = []
+    def _move_to_next_workstation(self, product: Product):
+        print(
+            f"At time t = {self.env.now}, ProductionLine = {product.get_name()}")
 
-    def add_job(self, job):
-        if len(self.jobs) < self.max_queue_size:
-            self.jobs.append(job)
-            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} added to the queue.")
-        else:
-            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
+        avail_workstation: list[System] = []
 
-    def pop_job(self, job):
-        if self.jobs:
-            job = self.jobs.pop()
-            print(f"At time t = {self.env.now}, Production Line A: Job {job.name} popped to the queue.")
-            return job
-        else:
-            print(f"At time t = {self.env.now}, Production Line A cannot add job {job.name}.")
+        for workstation in self.workstations:
+            if workstation.is_available() and not workstation.is_full():
+                avail_workstation.append(workstation)
 
-    def is_empty(self):
-        return len(self.jobs) == 0
+        if len(avail_workstation) > 0:
+            # prob ? 
+            workstation_select = random.choice(avail_workstation)
+            workstation_select.add_product(product=product)
+            return
 
-    def is_full(self):
-        return len(self.jobs) >= self.max_queue_size
+        return
 
-    def __len__(self):
-        return len(self.jobs)
+    def run(self):
+        super().run()
+        self.env.process(self.schedule())
 
-    def capacity(self):
-        return self.max_queue_size
-    
-class AdvancedProductionLine:
-    def __init__(self, env, max_queue_size, name, server, check, production_lines):
-        self.env = env
-        self.max_queue_size = max_queue_size
-        self.name = name
-        self.server = server
-        self.check = check
-        self.production_lines = production_lines
 
-    def add_job(self, job, line_index):
-        if line_index < len(self.production_lines):
-            line = self.production_lines[line_index]
-            line.add_job(job)
-        else:
-            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
 
-    def pop_job(self, line_index):
-        if line_index < len(self.production_lines):
-            line = self.production_lines[line_index]
-            return line.pop_job()
-        else:
-            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
-            return None
+class Workstation(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: pr.SystemParams,
+            queue_params: pr.QueueParams,
+            server_params: pr.ServerParams,
+            production_line: ProductionLine = None) -> None:
+        self.production_line = production_line
+        super().__init__(env, params, queue_params, server_params)
 
-    def is_empty(self, line_index):
-        if line_index < len(self.production_lines):
-            line = self.production_lines[line_index]
-            return line.is_empty()
-        else:
-            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
-            return True
+    def set_production_line(self, production_line: System):
+        self.production_line = production_line
+        return self
 
-    def is_full(self, line_index):
-        if line_index < len(self.production_lines):
-            line = self.production_lines[line_index]
-            return line.is_full()
-        else:
-            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
-            return True
+    # def request_server(System):
 
-    def __len__(self, line_index):
-        if line_index < len(self.production_lines):
-            line = self.production_lines[line_index]
-            return len(line)
-        else:
-            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
-            return 0
+    # if self.is_available():
+    #     request = sp.Request()
+    #     yield request
+    #     server = system.serve(request)
 
-    def capacity(self, line_index):
-        if line_index < len(self.production_lines):
-            line = self.production_lines[line_index]
-            return line.capacity()
-        else:
-            print(f"At time t = {self.env.now}, Advanced Production Line: Invalid line index.")
-            return 0
+    # else:
+
+    def schedule(self):
+        while True:
+            res, product, req = self.request_server()
+            # match res:
+            #     case # has product:
+            #         server = WorkstationServer(
+            #             env=self.env,
+            #             params=self.server_params,
+            #         )
+            #         yield req
+            #         self.env.process(self.serve(
+            #             product=product, req=req, server=server))
+            #         self._process_product(product=product)
+            #     case _:
+            #         if self.is_active():
+            #             yield from self.go_active()
+            #         else:
+            #             yield from self.go_idle()
+
+    def _process_product(self, product: Product):
+        print(
+            f"At time t = {self.env.now}, product in workstation  = {product.get_name()}")
+
+        yield self.env.timeout(product.get_processing_time())
+
+        self.production_line._move_to_next_workstation(product=product)
+
+    def run(self):
+        super().run()
+        self.env.process(self.schedule())
+
+
+
 
 # class Room(System):
 #     def __init__(

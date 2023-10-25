@@ -1,6 +1,5 @@
 SIM_DURATION = 20
 
-
 class ServerParams(object):
     def __init__(
         self,
@@ -36,3 +35,11 @@ class SystemParams(object):
         self.name = name
         self.max_servers = max_servers
         pass
+
+
+class Workstation(object):
+    def __init__(
+            self,
+            workstation: int,
+    ) -> None:
+        self.workstation = workstation
