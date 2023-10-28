@@ -52,11 +52,11 @@ class Dispatcher(System):
             params: SystemParams,
             queue_params: QueueParams,
             server_params: ServerParams,
-            production_line: list[ProductionLine] = None) -> None:
-        self.production_line = production_line
+            production_lines: list[ProductionLine] = None) -> None:
+        self.production_lines = production_lines
         super().__init__(env, params, queue_params, server_params)
 
-    def set_production_line(self, production_lines: list[ProductionLine]):
+    def set_production_lines(self, production_lines: list[ProductionLine]):
         self.production_lines = production_lines
         return self
     
@@ -83,10 +83,10 @@ class Dispatcher(System):
     def _move_to_next_production_line(self, product: Product):
         print(
             f"At time t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
-        production_line =["production_line_a", "production_line_b", "advanced_prod_line"]
-        product = np.random.choice(production_line, 3, p=[0.5, 0.4, 0.1])
-        production_line.add_product(product=product)
+        all_lines = self.production_lines
 
+        next_lines = np.random.choice(np.aray(all_lines), 3, p=[0.5, 0.4, 0.1])
+        next_lines[0].add_product(product=product)
         return
 
     def run(self):
@@ -153,8 +153,12 @@ class QACheck(System):
                         yield from self.go_idle()
 
     def _move_to_next_production_line(self, product: Product):
-        product = np.random.choice(len(production_line), 5, p=[0.6, 0.4])
-        production_line.add_product(product=product)
+        print(
+            f"At time t = {self.env.now}, QACheck MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
+        # all_lines = self.production_lines
+
+        # all_lines = np.random.choice(production_line, 3, p=[0.5, 0.4, 0.1])
+        # all_lines[0].add_product(product=product)
         return
 
     def run(self):
