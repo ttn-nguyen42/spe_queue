@@ -2,7 +2,7 @@ import simpy as sp
 import numpy as np
 import params as pr
 from product import Product
-from systems import ProductionLine, QACheck, System
+from systems import ProductionLine, QACheck
 from typing import List
 import uuid
 from prettytable import PrettyTable

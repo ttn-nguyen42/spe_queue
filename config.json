@@ -3,12 +3,8 @@
   "generator": {
     "mean_interarrival_time": 0.5
   },
-  "hallway": {
-    "name": "hallway-0",
-    "max_queue_size": 1000000
-  },
-  "reception": {
-    "name": "production_line_a",
+  "dispatcher": {
+    "name": "dispatcher",
     "max_queue_size": 5000,
     "max_servers": 20,
     "mean_service_time": 5

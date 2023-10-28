@@ -16,24 +16,24 @@ class Queue:
         self.params = params
         return
 
-    def enqueue(self, visitor: Visitor):
+    def enqueue(self, product: Product):
         if self.is_full():
             raise Exception("queue is full")
         self.visitors.append(visitor)
 
-    def dequeue(self) -> Visitor:
+    def dequeue(self) -> Product:
         if self.is_empty():
             raise Exception("queue is empty")
-        return self.visitors.pop(0)
+        return self.products.pop(0)
 
     def is_empty(self):
-        return len(self.visitors) == 0
+        return len(self.products) == 0
 
     def is_full(self):
-        return len(self.visitors) >= self.params.max_queue_size
+        return len(self.products) >= self.params.max_queue_size
 
     def __len__(self):
-        return len(self.visitors)
+        return len(self.products)
 
     def capacity(self):
         return self.params.max_queue_size

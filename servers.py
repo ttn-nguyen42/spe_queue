@@ -44,7 +44,7 @@ class DispatcherServer(Server):
         self.params = params
         super().__init__()
 
-    def process(self, productor: Product):
+    def process(self, product: Product):
         print(
             f"At time t = {self.env.now}, DispatcherServer RECEIVE product = {product.name}")
         service_time = max(1, np.random.exponential(

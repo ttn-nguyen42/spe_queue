@@ -59,9 +59,8 @@ class Dispatcher(System):
         print(
             f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {product.get_name()}")
         
-            product = np.random.choice(len(production_line), 5, p=[0.5, 0.4, 0.1])
-            production_line.add_product(product=product)
-            return
+        product = np.random.choice(len(production_line), 5, p=[0.5, 0.4, 0.1])
+        production_line.add_product(product=product)
 
         return
 
@@ -117,7 +116,7 @@ class QACheck(System):
         while True:
             res, product, req = self.request_server()
             match res:
-                case SystemScheduleResult.FOUND_SERVER:
+                case SystemScheduleResult.FOUND_PRODUCT:
                     server = QACheckServer(
                         env=self.env,
                         params=self.server_params,

@@ -2,7 +2,7 @@ import simpy as sp
 import numpy as np
 from params import ServerParams, QueueParams, SystemParams, SIM_DURATION
 from product import Product, ProductStatistics
-from servers import VisitorServer
+from servers import ProductsServer
 from qs import Queue
 from system_stats import SystemStatistics
 from simpy.resources.resource import Request
@@ -135,9 +135,9 @@ class System:
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _calculate_in_queue_wait_time(self):
-        remaining_visitors = self.queue.visitors
-        self.stats.in_queue_at_end = len(remaining_visitors)
-        for v in remaining_visitors:
+        remaining_products = self.queue.products
+        self.stats.in_queue_at_end = len(remaining_products)
+        for v in remaining_products:
             v.update_wait_time(id=self.get_name(), end=self.env.now)
             self.stats.update_wait_time(
                 wait_time=v.get_wait_time(id=self.get_name()))
@@ -161,17 +161,17 @@ class System:
                     f"{self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
                 product = self._get_product()
                 self._schedule_update_stats(product=product)
-                return SystemScheduleResult.FOUND_SERVER, product, req
+                return SystemScheduleResult.FOUND_PRODUCT, product, req
             else:
-                return SystemScheduleResult.NO_SERVER, None, None
+                return SystemScheduleResult.NO_PRODUCT, None, None
         else:
             print(
                 f"At time t = {self.env.now}, {self.get_name()} NO_SERVER idle start")
             return SystemScheduleResult.NO_SERVER, None, None
 
-    def serve(self, visitor: Visitor, req: sp.Resource, server: VisitorServer) -> sp.Event:
+    def serve(self, product: Product, req: sp.Resource, server: ProductionLineServer) -> sp.Event:
         service_start = self.env.now
-        yield from server.process(visitor=visitor)
+        yield from server.process(product=product)
         service_end = self.env.now
         self.stats.update_service_time(service_end - service_start)
 
@@ -179,16 +179,16 @@ class System:
         if self.is_available():
             self._stop_active()
 
-    def _schedule_update_stats(self, visitor: Visitor):
+    def _schedule_update_stats(self, product: Product):
         self.stats.update_service_requests()
-        self.stats.update_visitor_count()
+        self.stats.update_product_count()
 
-        visitor.update_wait_time(
+        product.update_wait_time(
             id=self.get_name(),
             end=self.env.now)
 
         self.stats.update_wait_time(
-            wait_time=visitor.get_wait_time(id=self.get_name()))
+            wait_time=product.get_wait_time(id=self.get_name()))
 
     def schedule(self):
         pass
