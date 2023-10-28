@@ -9,16 +9,37 @@ from system_stats import SystemStatistics
 from base_systems import System, SystemScheduleResult
 from numpy.random import choice
 
-class Product:
-    def __init__(self, name: str, processing_time: float):
-        self.name = name
-        self.processing_time = processing_time
+class Product(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams
+    ) -> None:
+        super().__init__(env, params, queue_params, server_params)
 
-    def get_name(self) -> str:
-        return self.name
+    def schedule(self):
+        while True:
+            res, product, req = self.request_server()
+            match res:
+                case SystemScheduleResult.FOUND_PRODUCT:
+                    server = ProductionLineServer(
+                        env=self.env,
+                        params=self.server_params,
+                    )
+                    yield req
+                    self.env.process(self.serve(
+                        product=product, req=req, server=server))
+                case _:
+                    if self.is_active():
+                        yield from self.go_active()
+                    else:
+                        yield from self.go_idle()
 
-    def get_processing_time(self) -> float:
-        return self.processing_time
+    def run(self):
+        super().run()
+        self.env.process(self.schedule())
 
 class Dispatcher(System):
     def __init__(

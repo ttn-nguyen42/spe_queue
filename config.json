@@ -9,7 +9,7 @@
     "max_servers": 20,
     "mean_service_time": 5
   },
-  "productionline": [
+  "products": [
     {
       "name": "production_line_a",
       "max_queue_size": 2000,

@@ -58,10 +58,10 @@ class Factory:
         self.dat = None
         self.configure(config_path=config_path)
 
-        self.products = self._generate_rooms(
+        self.products = self._generate_products(
         )
 
-        self.hallway.set_rooms(self.rooms)
+        self.hallway.set_products(self.products)
 
         reception_cfg = self.dat["reception"]
         self.reception = Reception(
@@ -76,8 +76,7 @@ class Factory:
             server_params=pr.ServerParams(
                 mean_service_time=reception_cfg["mean_service_time"],
             ),
-            rooms=self.rooms,
-            hallway=self.hallway,
+            products=self.products
         )
 
         generator_cfg = self.dat["generator"]
@@ -101,7 +100,7 @@ class Factory:
         self.hallway.stop_active()
         self.reception.stop_idle()
         self.reception.stop_active()
-        for r in self.rooms:
+        for r in self.products:
             r.stop_idle()
             r.stop_active()
         return
@@ -115,7 +114,7 @@ class Factory:
     def open(self):
         print(
             f"------------------------\nAt time t =  {self.env.now}, Museum OPENS\n------------------------")
-        self._start_rooms()
+        self._start_products()
         # self.hallway.run()
         self.dispatcher.run()
         self.generator.run()
@@ -123,12 +122,11 @@ class Factory:
         self.env.run(until=proc)
         self.stats()
 
-    def _generate_rooms(self) -> List[Product]:
+    def _generate_products(self) -> List[Product]:
         products: List[Product] = []
         cfgs = self.dat["products"]
         for product_cfg in cfgs:
             products.append(Product(
-                env=self.env,
                 server_params=pr.ServerParams(
                     mean_service_time=product_cfg["mean_service_time"],
                 ),
@@ -136,12 +134,12 @@ class Factory:
                     max_queue_size=product_cfg["max_queue_size"],
                 ),
                 params=pr.SystemParams(
-                    name=room_cfg["name"], max_servers=room_cfg["max_servers"],
+                    name=product_cfg["name"], max_servers=product_cfg["max_servers"],
                 ),
             ))
         return products
 
-    def _start_rooms(self):
+    def _start_products(self):
         i = 0
         for r in self.products:
             r.run()
@@ -152,7 +150,7 @@ class Factory:
         tb = PrettyTable(["system_name", "total_idle_time",
                          "avg_service_time", "avg_wait_time", "visitors"])
         tb.add_row(self.dispatcher.get_stats().list_stats())
-        for r in self.rooms:
+        for r in self.products:
             tb.add_row(r.get_stats().list_stats())
         tb.align["system_name"] = "l"
         print(tb)
