@@ -9,6 +9,7 @@ import uuid
 from prettytable import PrettyTable
 import json
 
+
 class GeneratorStatistics:
     def __init__(self, env: sp.Environment) -> None:
         self.env = env
@@ -40,6 +41,7 @@ total_generated: {self.total_generated}
 reception_overflow_count: {self.reception_overflow_count}
 avg_interarrival_time: {round(self.avg_interarrival_time(), 5)}
 """
+
 
 class Generator:
     def __init__(
@@ -77,7 +79,8 @@ class Generator:
 
     def run(self):
         self.env.process(self.generate())
-        
+
+
 class Factory:
     def __init__(self, config_path: str) -> None:
         self.env = sp.Environment()
@@ -99,6 +102,7 @@ class Factory:
             server_params=pr.ServerParams(
                 mean_service_time=dispatcher_cfg["mean_service_time"],
             ),
+            production_lines=self.products
         )
 
         generator_cfg = self.dat["generator"]
@@ -144,7 +148,7 @@ class Factory:
         self.stats()
 
     def _generate_products(self) -> List[ProductionLine]:
-        productionline: List[ProductLine] = []
+        productionline: List[ProductionLine] = []
         cfgs = self.dat["productionlines"]
         for productionline_cfg in cfgs:
             productionline.append(ProductionLine(
@@ -180,6 +184,7 @@ class Factory:
         print(
             f"------------------------\nGenerator statistics\n------------------------")
         print(self.generator.get_stats())
+
 
 if __name__ == "__main__":
     ms = Factory(config_path="./config.json")

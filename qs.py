@@ -12,7 +12,7 @@ class Queue:
         self,
         params: pr.QueueParams,
     ) -> None:
-        self.products: List[Products] = []
+        self.products: List[Product] = []
         self.params = params
         return
 
