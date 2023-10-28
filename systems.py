@@ -4,9 +4,9 @@ from product import Product
 from qs import Queue
 from servers import ProductionLineServer, DispatcherServer
 from system_stats import SystemStatistics
-import random
+# import random
 from base_systems import System, SystemScheduleResult
-
+from numpy.random import choice
 
 class Product:
     def __init__(self, name: str, processing_time: float):
@@ -28,6 +28,7 @@ class Dispatcher(System):
             server_params: ServerParams,
             production_line: ProductionLine = None) -> None:
         self.production_lines = production_lines
+        line_prob = [0.5,0.4,0.1]
         super().__init__(env, params, queue_params, server_params)
 
     def set_production_line(self, production_lines: list[ProductionLine]):
@@ -59,12 +60,9 @@ class Dispatcher(System):
         print(
             f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {product.get_name()}")
         
-         if random.random() > product.get_success_rate():
-            production_line = random.choice(self.production_lines[:2])
-            production_line.add_product(product=product)
-            return
-
-        self.production_lines[2].add_product(product=product)
+        production_line = choice(self.production_lines[:2],1,line_prob)
+        production_line.add_product(product=product)
+        
         return
 
     def run(self):
@@ -78,7 +76,7 @@ class ProductionLine(System):
         name: str,
         queue_params: pr.QueueParams,
         server_params: pr.ServerParams,
-        qa_check: QACheck = None,
+        qa_check: QACheck = None, 
     ) -> None:
         super().__init__(env, name, queue_params, server_params)
         self.qa_check = qa_check
@@ -108,6 +106,7 @@ class QACheck(System):
             hallway: System = None) -> None:
         self.production_lines = production_lines
         super().__init__(env, params, queue_params, server_params)
+        line_prob = [0.6,0.4]
 
     def set_production_lines(self, production_lines: list[ProductionLine]):
         self.production_lines = production_lines
@@ -139,6 +138,8 @@ class QACheck(System):
             product.is_complete = True
         else:
             # move_to_next_production_line
+            production_line = choice(self.production_lines[:2],1,line_prob)
+            production_line.add_product(product=product)
         return
 
 
