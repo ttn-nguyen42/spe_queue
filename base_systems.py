@@ -2,7 +2,7 @@ import simpy as sp
 import numpy as np
 from params import ServerParams, QueueParams, SystemParams, SIM_DURATION
 from product import Product, ProductStatistics
-from servers import ProductionLineServer
+from servers import ProductionLineServer, ProductServer, DispatcherServer
 from qs import Queue
 from system_stats import SystemStatistics
 from simpy.resources.resource import Request
@@ -86,10 +86,7 @@ class System:
     def __len__(self) -> int:
         return len(self.queue)
 
-    # Returns the ratio of:
-    # server/available_servers
-    # and current_visitors/queue_capacity
-    # for sorting
+    
     def availability(self, args = None) -> Tuple[float, float]:
         server_ratio = 0.0
         if self.available_servers.capacity == 0:
@@ -168,7 +165,7 @@ class System:
                 f"At time t = {self.env.now}, {self.get_name()} NO_SERVER idle start")
             return SystemScheduleResult.NO_SERVER, None, None
 
-    def serve(self, product: Product, req: sp.Resource, server: ProductionLineServer) -> sp.Event:
+    def serve(self, product: Product, req: sp.Resource, server: ProductServer) -> sp.Event:
         service_start = self.env.now
         yield from server.process(product=product)
         service_end = self.env.now

@@ -34,7 +34,7 @@ class Entry:
 class Product:
     def __init__(self, name: str) -> None:
         self.name = name
-        self.queues_visited: List[Entry] = []
+        self.queues_visited: dict[str, ProductStatistics] = {}
 
     def __str__(self) -> str:
         return f"name={self.name} visited={self.queues_visited} wait_time={self.get_total_wait_time()} service_time={self.get_total_service_time()}"
@@ -43,24 +43,39 @@ class Product:
         return self.name
 
     def visited(self, queue_id: str):
-        self.queues_visited.append(
-            Entry(id=queue_id, stats=ProductStatistics()),
-        )
+        self.queues_visited[queue_id] = ProductStatistics(),
 
     def has_visited(self, queue_id: str):
-        for entry in self.queues_visited:
-            if entry.id == queue_id:
-                return True
-        return False
+        res = self.queues_visited.get(queue_id)
+        return res is not None
 
     def get_total_wait_time(self) -> float:
         total: float = 0.0
-        for entry in self.queues_visited:
-            total += entry.stats.get_wait_time()
+        for (_, v) in enumerate(self.queues_visited):
+            total += v.get_wait_time()
         return total
 
-    def get_total_service_time(self) -> float:
-        total: float = 0.0
-        for entry in self.queues_visited:
-            total += entry.stats.get_service_time()
-        return total
+    def update_wait_time(self, id: str, end: float):
+        res = self.queues_visited[id]
+        if res is None:
+            raise Exception("not exists")
+        res.end_wait_time = end
+        print(f"STAT: {res}")
+
+    def started_waiting_at(self, id: str) -> float:
+        res = self.queues_visited[id]
+        if res is None:
+            raise Exception("not exists")
+        return res.start_wait_time
+
+    def set_wait_start(self, at: float):
+        res = self.queues_visited[id]
+        if res is None:
+            raise Exception("not exists")
+        res.start_wait_time = at
+
+    def get_wait_time(self, id: str):
+        res = self.queues_visited[id]
+        if res is None:
+            raise Exception("not exists")
+        return res.get_wait_time()

@@ -4,18 +4,24 @@ import params as pr
 import numpy as np
 import systems as st
 
-class Server:
-    def __init__(self, env, mean_service_time, name):
-        self.env = env
-        self.mean_service_time = mean_service_time
-        self.name = name
+class ProductServer:
+    # def __init__(self, env: sp.Environment, params: pr.ServerParams) -> None:
+    #     self.env = env
+    #     self.params = params
+    #     super().__init__()
+    def __init__(self) -> None:
+        pass
 
-    def process(self, job):
-        service_time = np.random.exponential(self.mean_service_time)
-        yield self.env.timeout(service_time)
-        print(f"At time t = {self.env.now}, Server {self.name}: Job {job.name} processed in {service_time} time.")
+    def process(self, product: Product) -> sp.Event:
+        pass
+        # service_time = np.random.exponential(self.mean_service_time)
+        # yield self.env.timeout(service_time)
+        # print(f"At time t = {self.env.now}, Server {self.name}: Job {job.name} processed in {service_time} time.")
 
-class ProductionLineServer(Server):
+    def stop(self):
+        pass
+
+class ProductionLineServer(ProductServer):
     def __init__(
         self,
         env: sp.Environment,
@@ -38,7 +44,7 @@ class ProductionLineServer(Server):
     def stop(self):
         return  
         
-class DispatcherServer(Server):
+class DispatcherServer(ProductServer):
     def __init__(self, env: sp.Environment, params: pr.ServerParams) -> None:
         self.env = env
         self.params = params

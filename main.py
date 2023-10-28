@@ -9,28 +9,71 @@ import uuid
 from prettytable import PrettyTable
 import json
 
+class GeneratorStatistics:
+    def __init__(self, env: sp.Environment) -> None:
+        self.env = env
+
+        self.reception_overflow_count: int = 0
+        self.total_generated: int = 0
+        self.total_interarrival_time: float = 0.0
+
+    def add_overflow_count(self):
+        self.reception_overflow_count += 1
+
+    def add_total_generated(self):
+        self.total_generated += 1
+
+    def avg_interarrival_time(self) -> float:
+        if self.total_generated == 0:
+            return 0.0
+        return self.total_interarrival_time / self.total_generated
+
+    def update_interarrival_time(self, last_time: float):
+        self.total_interarrival_time += last_time
+
+    def list_stats(self) -> List:
+        return [self.reception_overflow_count, self.total_generated]
+
+    def __str__(self) -> str:
+        return f"""
+total_generated: {self.total_generated}
+reception_overflow_count: {self.reception_overflow_count}
+avg_interarrival_time: {round(self.avg_interarrival_time(), 5)}
+"""
+
 class Generator:
     def __init__(
         self,
         env: sp.Environment,
         params: pr.GeneratorParams,
-        dispatcher: System,
+        dispatcher: Dispatcher,
     ) -> None:
         self.env = env
         self.params = params
         self.dispatcher = dispatcher
+        self.stats = GeneratorStatistics(env=self.env)
 
     def generate(self):
         while True:
             interarrival = np.random.exponential(
                 self.params.mean_interarrival_time)
             yield self.env.timeout(interarrival)
-            print(f"At time t = {self.env.now}, Generate NEW_VISITOR")
+            print(f"At time t = {self.env.now}, Generate NEW_PRODUCT")
+            self.stats.update_interarrival_time(last_time=interarrival)
+            self.stats.add_total_generated()
+            if self.dispatcher.is_full():
+                self.stats.add_overflow_count()
+                print(f"Generator DISPATCHER_FULL")
+                continue
+
             self.dispatcher.add_product(
                 product=Product(name=self._random_name()))
 
     def _random_name(self) -> str:
         return uuid.uuid4()
+
+    def get_stats(self) -> GeneratorStatistics:
+        return self.stats
 
     def run(self):
         self.env.process(self.generate())
@@ -92,7 +135,7 @@ class Factory:
 
     def open(self):
         print(
-            f"------------------------\nAt time t =  {self.env.now}, Museum OPENS\n------------------------")
+            f"------------------------\nAt time t =  {self.env.now}, Factory OPENS\n------------------------")
         self._start_products()
         # self.hallway.run()
         self.dispatcher.run()
@@ -135,6 +178,9 @@ class Factory:
         tb.align["system_name"] = "l"
         print(tb)
 
+        print(
+            f"------------------------\nGenerator statistics\n------------------------")
+        print(self.generator.get_stats())
 
 if __name__ == "__main__":
     ms = Factory(config_path="./config.json")

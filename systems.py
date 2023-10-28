@@ -1,9 +1,10 @@
 import simpy as sp
+import numpy as np
 import params as pr
 from product import Product
 from qs import Queue
 from params import ServerParams, QueueParams, SystemParams
-from servers import ProductionLineServer, DispatcherServer
+from servers import ProductionLineServer, DispatcherServer, ProductServer
 from system_stats import SystemStatistics
 import random
 from base_systems import System, SystemScheduleResult
@@ -16,15 +17,15 @@ class ProductionLine(System):
             params: SystemParams,
             queue_params: QueueParams,
             server_params: ServerParams) -> None:
-        self.env = env
-        self.params = params
-        self.queue_params = queue_params
-        self.server_params = server_params
+        # self.env = env
+        # self.params = params
+        # self.queue_params = queue_params
+        # self.server_params = server_params
         super().__init__(env, params=params, queue_params=queue_params, server_params=server_params)
                 
     def schedule(self):
         while True:
-            res, productionline, req = self.request_server()
+            res, product, req = self.request_server()
             match res:
                 case SystemScheduleResult.FOUND_PRODUCT:
                     server = ProductionLineServer(
@@ -33,7 +34,7 @@ class ProductionLine(System):
                     )
                     yield req
                     self.env.process(self.serve(
-                        productionline=productionline, req=req, server=server))
+                        product=product, req=req, server=server))
                 case _:
                     if self.is_active():
                         yield from self.go_active()
@@ -51,18 +52,18 @@ class Dispatcher(System):
             params: SystemParams,
             queue_params: QueueParams,
             server_params: ServerParams,
-            production_line: ProductionLineServer = None) -> None:
+            production_line: list[ProductionLine] = None) -> None:
         self.production_line = production_line
         super().__init__(env, params, queue_params, server_params)
 
-    def set_production_line(self, production_lines: list[ProductionLineServer]):
+    def set_production_line(self, production_lines: list[ProductionLine]):
         self.production_lines = production_lines
         return self
     
 
     def schedule(self):
         while True:
-            res, productionline, req = self.request_server()
+            res, product, req = self.request_server()
             match res:
                 case SystemScheduleResult.FOUND_PRODUCT:
                     server = DispatcherServer(
@@ -71,19 +72,19 @@ class Dispatcher(System):
                     )
                     yield req
                     self.env.process(self.serve(
-                        productionline=productionline, req=req, server=server))
-                    self._move_to_next_production_line(productionline=productionline)
+                        product=product, req=req, server=server))
+                    self._move_to_next_production_line(product=product)
                 case _:
                     if self.is_active():
                         yield from self.go_active()
                     else:
                         yield from self.go_idle()
 
-    def _move_to_next_production_line(self, productionline: ProductionLine):
+    def _move_to_next_production_line(self, product: Product):
         print(
-            f"At time t = {self.env.now}, Dispatcher MOVE_TO_ROOM visitor = {product.get_name()}")
-        
-        product = np.random.choice(len(production_line), 5, p=[0.5, 0.4, 0.1])
+            f"At time t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
+        production_line =["production_line_a", "production_line_b", "advanced_prod_line"]
+        product = np.random.choice(production_line, 3, p=[0.5, 0.4, 0.1])
         production_line.add_product(product=product)
 
         return
