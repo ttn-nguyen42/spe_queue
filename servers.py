@@ -9,11 +9,7 @@ class Server:
         self.env = env
         self.mean_service_time = mean_service_time
         self.name = name
-        self.mean_service_time = mean_service_time
-        self.name = name
 
-    def process(self, job):
-        service_time = np.random.exponential(self.mean_service_time)
     def process(self, job):
         service_time = np.random.exponential(self.mean_service_time)
         yield self.env.timeout(service_time)
@@ -38,8 +34,6 @@ class ProductionLineServer(Server):
         print(
             f"At time t = {self.env.now}, ProductionLineServer START product = {product.name}, duration = {service_time}")
         yield self.env.timeout(service_time)
-        print(
-            f"At time t = {self.env.now}, ProductionLineServer FINISH product = {product.name}")
 
     def stop(self):
         return  

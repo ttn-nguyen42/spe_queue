@@ -8,47 +8,41 @@
     "max_queue_size": 1000000
   },
   "reception": {
-    "name": "reception-0",
+    "name": "production_line_a",
     "max_queue_size": 5000,
     "max_servers": 20,
     "mean_service_time": 5
   },
-  "rooms": [
+  "productionline": [
     {
-      "name": "dinosaur",
+      "name": "production_line_a",
       "max_queue_size": 2000,
       "mean_service_time": 10,
       "max_servers": 20
     },
     {
-      "name": "ice_age",
+      "name": "production_line_b",
+      "max_queue_size": 2000,
+      "mean_service_time": 10,
+      "max_servers": 20
+    },
+    {
+      "name": "qa_check_a",
       "max_queue_size": 1000,
       "mean_service_time": 10,
       "max_servers": 10
     },
     {
-      "name": "egyption",
+      "name": "qa_check_b",
       "max_queue_size": 3000,
       "mean_service_time": 30,
       "max_servers": 20
     },
     {
-      "name": "vietnamese",
+      "name": "advanced_prod_line",
       "max_queue_size": 2000,
       "mean_service_time": 10,
       "max_servers": 50
-    },
-    {
-      "name": "america",
-      "max_queue_size": 3000,
-      "mean_service_time": 1,
-      "max_servers": 20
-    },
-    {
-      "name": "mongol",
-      "max_queue_size": 2000,
-      "mean_service_time": 10,
-      "max_servers": 20
     }
   ]
 }

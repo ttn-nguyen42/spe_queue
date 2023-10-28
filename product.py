@@ -1,6 +1,5 @@
 from typing import List
 
-
 class ProductStatistics:
     def __init__(self) -> None:
         self.wait_time: float = 0.0
@@ -33,7 +32,6 @@ class Entry:
 
 
 class Product:
-
     def __init__(self, name: str) -> None:
         self.name = name
         self.queues_visited: List[Entry] = []

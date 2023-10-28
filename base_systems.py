@@ -10,9 +10,9 @@ from typing import Tuple
 
 
 class SystemScheduleResult:
-    FOUND_SERVER = 1,
-    NO_SERVER = 2,
-    # NO_SERVER = 3,
+    FOUND_PRODUCT = 1,
+    NO_PRODUCT = 2,
+    NO_SERVER = 3,
 
 
 class System:
@@ -50,13 +50,13 @@ class System:
     def get_name(self) -> str:
         return self.params.name
 
-    def add_visitor(self, visitor: Visitor):
-        self.queue.enqueue(visitor=visitor)
+    def add_product(self, product: Product):
+        self.queue.enqueue(product=product)
 
-        stats = VisitorStatistics()
+        stats = {Product}Statistics()
         stats.start_wait_time = self.env.now
 
-        visitor.queues_visited[self.get_name()] = stats
+        product.queues_visited[self.get_name()] = stats
 
         if self.is_idle:
             self._stop_idle()
@@ -64,7 +64,7 @@ class System:
         if self.is_available():
             self._stop_active()
 
-    def _get_visitor(self) -> Visitor:
+    def _get_product(self) -> Product:
         try:
             return self.queue.dequeue()
         except Exception:
@@ -153,21 +153,21 @@ class System:
         self.idle_proc = self.env.process(idle_timeout)
         yield self.idle_proc
 
-    def request_server(self) -> (SystemScheduleResult, Visitor, Request):
+    def request_server(self) -> (SystemScheduleResult, Product, Request):
         if not self.is_empty():
             if self.is_available():
                 req = self.available_servers.request()
                 print(
                     f"{self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
-                visitor = self._get_visitor()
-                self._schedule_update_stats(visitor=visitor)
-                return SystemScheduleResult.FOUND_VISITOR, visitor, req
+                product = self._get_product()
+                self._schedule_update_stats(product=product)
+                return SystemScheduleResult.FOUND_SERVER, product, req
             else:
                 return SystemScheduleResult.NO_SERVER, None, None
         else:
             print(
-                f"At time t = {self.env.now}, {self.get_name()} NO_VISITOR idle start")
-            return SystemScheduleResult.NO_VISITOR, None, None
+                f"At time t = {self.env.now}, {self.get_name()} NO_SERVER idle start")
+            return SystemScheduleResult.NO_SERVER, None, None
 
     def serve(self, visitor: Visitor, req: sp.Resource, server: VisitorServer) -> sp.Event:
         service_start = self.env.now

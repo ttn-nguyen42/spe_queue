@@ -33,7 +33,7 @@ class Dispatcher(System):
     def set_production_line(self, production_lines: list[ProductionLine]):
         self.production_lines = production_lines
         return self
-
+    
 
     def schedule(self):
         while True:
@@ -54,17 +54,14 @@ class Dispatcher(System):
                     else:
                         yield from self.go_idle()
 
-    # Move visitor to room
     def _move_to_next_production_line(self, product: Product):
         print(
             f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {product.get_name()}")
         
-         if random.random() > product.get_success_rate():
-            production_line = random.choice(self.production_lines[:2])
+            product = np.random.choice(len(production_line), 5, p=[0.5, 0.4, 0.1])
             production_line.add_product(product=product)
             return
 
-        self.production_lines[2].add_product(product=product)
         return
 
     def run(self):
@@ -105,7 +102,7 @@ class QACheck(System):
             queue_params: QueueParams,
             server_params: ServerParams,
             production_lines: list[ProductionLine],
-            hallway: System = None) -> None:
+            hallway: System = None) -> None:    
         self.production_lines = production_lines
         super().__init__(env, params, queue_params, server_params)
 
@@ -135,10 +132,8 @@ class QACheck(System):
 
     def _move_to_next_production_line(self, product: Product):
 
-        if random.random() > self.success_rate:
-            product.is_complete = True
-        else:
-            # move_to_next_production_line
+        product = np.random.choice(len(production_line), 5, p=[0.6, 0.4])
+        production_line.add_product(product=product)
         return
 
 
