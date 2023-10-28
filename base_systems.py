@@ -11,7 +11,7 @@ from typing import Tuple
 
 class SystemScheduleResult:
     FOUND_SERVER = 1,
-    NO_SERVER_AVAILABLE = 2,
+    NO_SERVER = 2,
     # NO_SERVER = 3,
 
 
