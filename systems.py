@@ -2,6 +2,7 @@ import simpy as sp
 import params as pr
 from product import Product
 from qs import Queue
+from params import ServerParams, QueueParams, SystemParams
 from servers import ProductionLineServer, DispatcherServer
 from system_stats import SystemStatistics
 # import random
@@ -26,12 +27,12 @@ class Dispatcher(System):
             params: SystemParams,
             queue_params: QueueParams,
             server_params: ServerParams,
-            production_line: ProductionLine = None) -> None:
+            production_line: ProductionLineServer = None) -> None:
         self.production_lines = production_lines
         line_prob = [0.5,0.4,0.1]
         super().__init__(env, params, queue_params, server_params)
 
-    def set_production_line(self, production_lines: list[ProductionLine]):
+    def set_production_line(self, production_lines: list[ProductionLineServer]):
         self.production_lines = production_lines
         return self
     
@@ -75,10 +76,8 @@ class ProductionLine(System):
         name: str,
         queue_params: pr.QueueParams,
         server_params: pr.ServerParams,
-        qa_check: QACheck = None, 
     ) -> None:
         super().__init__(env, name, queue_params, server_params)
-        self.qa_check = qa_check
 
     def schedule(self):
         while True:
@@ -97,7 +96,7 @@ class ProductionLine(System):
 class QACheck(System):
     def __init__(
             self,
-            env: simpy.Environment,
+            env: sp.Environment,
             params: SystemParams,
             queue_params: QueueParams,
             server_params: ServerParams,

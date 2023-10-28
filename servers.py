@@ -25,7 +25,7 @@ class ProductionLineServer(Server):
         self.params = params
         super().__init__()
 
-    def process(self, product: product):
+    def process(self, product: Product):
         print(
             f"At time t = {self.env.now}, ProductionLineServer RECEIVE product = {product.name}")
         service_time = max(1, np.random.exponential(
@@ -39,19 +39,23 @@ class ProductionLineServer(Server):
         return  
         
 class DispatcherServer(Server):
-     def __init__(self, env: sp.Environment, params: pr.ServerParams) -> None:
+    def __init__(self, env: sp.Environment, params: pr.ServerParams) -> None:
         self.env = env
         self.params = params
         super().__init__()
 
+    
     def process(self, product: Product):
         print(
             f"At time t = {self.env.now}, DispatcherServer RECEIVE product = {product.name}")
-        service_time = max(1, np.random.exponential(
-            self.params.mean_service_time))
+
+        service_time = max(1, np.random.exponential(self.params.mean_service_time))
+        
         print(
             f"At time t = {self.env.now}, DispatcherServer START product = {product.name}, duration = {service_time}")
+        
         yield self.env.timeout(service_time)
+        
         print(
             f"At time t = {self.env.now}, DispatcherServer FINISH product = {product.name}")
 

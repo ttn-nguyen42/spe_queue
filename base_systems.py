@@ -2,7 +2,7 @@ import simpy as sp
 import numpy as np
 from params import ServerParams, QueueParams, SystemParams, SIM_DURATION
 from product import Product, ProductStatistics
-from servers import ProductsServer
+from servers import ProductionLineServer
 from qs import Queue
 from system_stats import SystemStatistics
 from simpy.resources.resource import Request
@@ -53,7 +53,7 @@ class System:
     def add_product(self, product: Product):
         self.queue.enqueue(product=product)
 
-        stats = {Product}Statistics()
+        stats = ProductStatistics()
         stats.start_wait_time = self.env.now
 
         product.queues_visited[self.get_name()] = stats

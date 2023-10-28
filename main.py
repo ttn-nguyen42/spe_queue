@@ -2,13 +2,12 @@ import simpy as sp
 import numpy as np
 import params as pr
 from product import Product
-from systems import ProductionLine, QACheck
+from systems import ProductionLine, QACheck, Dispatcher
+from base_systems import System, SystemScheduleResult
 from typing import List
 import uuid
 from prettytable import PrettyTable
 import json
-
-
 
 class Generator:
     def __init__(
