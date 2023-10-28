@@ -9,30 +9,60 @@ class Server:
         self.env = env
         self.mean_service_time = mean_service_time
         self.name = name
+        self.mean_service_time = mean_service_time
+        self.name = name
 
+    def process(self, job):
+        service_time = np.random.exponential(self.mean_service_time)
     def process(self, job):
         service_time = np.random.exponential(self.mean_service_time)
         yield self.env.timeout(service_time)
         print(f"At time t = {self.env.now}, Server {self.name}: Job {job.name} processed in {service_time} time.")
 
 class ProductionLineServer(Server):
-    def __init__(self, env: sp.Environment, params: pr.ServerParams):
-        super().__init__(env, params)
+    def __init__(
+        self,
+        env: sp.Environment,
+        params: pr.ServerParams,
+    ) -> None:
+        self.env = env
+        self.params = params
+        super().__init__()
 
-    def serve(self, product: st.Product, server: Server) -> None:
-        yield self.env.timeout(product.get_processing_time())
+    def process(self, product: product):
+        print(
+            f"At time t = {self.env.now}, RoomServer RECEIVE product = {product.name}")
+        service_time = max(1, np.random.exponential(
+            self.params.mean_service_time,
+        ))
+        print(
+            f"At time t = {self.env.now}, RoomServer START product = {product.name}, duration = {service_time}")
+        yield self.env.timeout(service_time)
+        print(
+            f"At time t = {self.env.now}, RoomServer FINISH product = {product.name}")
 
-        # product.processed()        
+    def stop(self):
+        return  
         
+class DispatcherServer(Server):
+     def __init__(self, env: sp.Environment, params: pr.ServerParams) -> None:
+        self.env = env
+        self.params = params
+        super().__init__()
 
-class WorkstationServer(Server):
-    def __init__(self, env: sp.Environment, params: ServerParams):
-        super().__init__(env, params)
+    def process(self, productor: Product):
+        print(
+            f"At time t = {self.env.now}, ReceptionServer RECEIVE product = {product.name}")
+        service_time = max(1, np.random.exponential(
+            self.params.mean_service_time))
+        print(
+            f"At time t = {self.env.now}, ReceptionServer START product = {product.name}, duration = {service_time}")
+        yield self.env.timeout(service_time)
+        print(
+            f"At time t = {self.env.now}, ReceptionServer FINISH product = {product.name}")
 
-    def serve(self, product: st.Product, req: sp.Request, server: Server) -> None:
-        yield self.env.timeout(product.get_processing_time())
-
-        self.production_line._move_to_next_workstation(product=product)
+    def stop(self):
+        return
 
 
 # class VisitorServer:

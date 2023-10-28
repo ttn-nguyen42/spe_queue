@@ -37,9 +37,3 @@ class SystemParams(object):
         pass
 
 
-class Workstation(object):
-    def __init__(
-            self,
-            workstation: int,
-    ) -> None:
-        self.workstation = workstation

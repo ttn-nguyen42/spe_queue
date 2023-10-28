@@ -2,7 +2,7 @@ import simpy as sp
 import params as pr
 from visitor import Visitor
 from qs import Queue
-from servers import ProductionLineServer, WorkstationServer
+from servers import ProductionLineServer, DispatcherServer
 from system_stats import SystemStatistics
 import random
 from base_systems import System, SystemScheduleResult
@@ -19,111 +19,83 @@ class Product:
     def get_processing_time(self) -> float:
         return self.processing_time
 
-
-class ProductionLine(System):
+class Dispatcher(System):
     def __init__(
             self,
             env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
-            workstations: list[pr.Workstation] = None) -> None:
-        self.workstations = workstations
+            params: SystemParams,
+            queue_params: QueueParams,
+            server_params: ServerParams,
+            production_line: ProductionLine = None) -> None:
+        self.production_lines = production_lines
         super().__init__(env, params, queue_params, server_params)
 
-    def set_workstations(self, workstations: list[System]):
-        self.workstations = workstations
+    def set_production_line(self, production_lines: list[ProductionLine]):
+        self.production_lines = production_lines
         return self
 
-    # Moves product to next workstation
+
     def schedule(self):
         while True:
             res, product, req = self.request_server()
-           
-                    # if self.is_active():
-                    #     yield from self.go_active()
-                    # else:
-                    #     yield from self.go_idle()
+            match res:
+                case SystemScheduleResult.FOUND_SERVER:
+                    server = DispatcherServer(
+                        env=self.env,
+                        params=self.server_params,
+                    )
+                    yield req
+                    self.env.process(self.serve(
+                        product=product, req=req, server=server))
+                    self._move_to_next_production_line(product=product)
+                case _:
+                    if self.is_active():
+                        yield from self.go_active()
+                    else:
+                        yield from self.go_idle()
 
-    def _move_to_next_workstation(self, product: Product):
+    # Move visitor to room
+    def _move_to_next_production_line(self, product: Product):
         print(
-            f"At time t = {self.env.now}, ProductionLine = {product.get_name()}")
-
-        avail_workstation: list[System] = []
-
-        for workstation in self.workstations:
-            if workstation.is_available() and not workstation.is_full():
-                avail_workstation.append(workstation)
-
-        if len(avail_workstation) > 0:
-            # prob ? 
-            workstation_select = random.choice(avail_workstation)
-            workstation_select.add_product(product=product)
+            f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {product.get_name()}")
+        
+         if random.random() > product.get_success_rate():
+            production_line = random.choice(self.production_lines[:2])
+            production_line.add_product(product=product)
             return
 
+        self.production_lines[2].add_product(product=product)
         return
 
     def run(self):
         super().run()
         self.env.process(self.schedule())
 
-
-
-class Workstation(System):
+class ProductionLine(System):
     def __init__(
-            self,
-            env: sp.Environment,
-            params: pr.SystemParams,
-            queue_params: pr.QueueParams,
-            server_params: pr.ServerParams,
-            production_line: ProductionLine = None) -> None:
-        self.production_line = production_line
-        super().__init__(env, params, queue_params, server_params)
-
-    def set_production_line(self, production_line: System):
-        self.production_line = production_line
-        return self
-
-    # def request_server(System):
-
-    # if self.is_available():
-    #     request = sp.Request()
-    #     yield request
-    #     server = system.serve(request)
-
-    # else:
+        self,
+        env: sp.Environment,
+        name: str,
+        queue_params: pr.QueueParams,
+        server_params: pr.ServerParams,
+        qa_check: QACheck = None,
+    ) -> None:
+        super().__init__(env, name, queue_params, server_params)
+        self.qa_check = qa_check
 
     def schedule(self):
         while True:
-            res, product, req = self.request_server()
-            # match res:
-            #     case # has product:
-            #         server = WorkstationServer(
-            #             env=self.env,
-            #             params=self.server_params,
-            #         )
-            #         yield req
-            #         self.env.process(self.serve(
-            #             product=product, req=req, server=server))
-            #         self._process_product(product=product)
-            #     case _:
-            #         if self.is_active():
-            #             yield from self.go_active()
-            #         else:
-            #             yield from self.go_idle()
+            visitor, request = self.request_server()
+            if visitor is not None:
+                if self.qa_check is not None:
+                    self.qa_check.add_visitor(visitor=visitor)
+                else:
+                    visitor.is_complete = True
 
-    def _process_product(self, product: Product):
-        print(
-            f"At time t = {self.env.now}, product in workstation  = {product.get_name()}")
+                self.server.release(request)
 
-        yield self.env.timeout(product.get_processing_time())
-
-        self.production_line._move_to_next_workstation(product=product)
-
-    def run(self):
-        super().run()
-        self.env.process(self.schedule())
-
+            else:
+                yield self.env.timeout(0.25)
 
 class QACheck(System):
     def __init__(
@@ -163,17 +135,19 @@ class QACheck(System):
 
     def _move_to_next_production_line(self, product: Product):
 
-        if random.random() > product.get_success_rate():
-            production_line = random.choice(self.production_lines[:2])
-            production_line.add_product(product=product)
-            return
-
-        self.production_lines[2].add_product(product=product)
+        if random.random() > self.success_rate:
+            product.is_complete = True
+        else:
+            # move_to_next_production_line
         return
+
 
     def run(self):
         super().run()
         self.env.process(self.schedule())
+
+    
+
 
 # class Room(System):
 #     def __init__(
