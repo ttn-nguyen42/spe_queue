@@ -84,38 +84,16 @@ class Dispatcher(System):
         print(
             f"At time t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
         all_lines = self.production_lines
-
-        next_lines = np.random.choice(np.aray(all_lines), 3, p=[0.5, 0.4, 0.1])
+        if self.production_lines is None:
+            return
+        
+        next_lines = np.random.choice(np.array(all_lines), 3, p=[0.5, 0.4, 0.1])
         next_lines[0].add_product(product=product)
         return
 
     def run(self):
         super().run()
         self.env.process(self.schedule())
-
-# class ProductionLine(System):
-#     def __init__(
-#         self,
-#         env: sp.Environment,
-#         name: str,
-#         queue_params: pr.QueueParams,
-#         server_params: pr.ServerParams,
-#     ) -> None:
-#         super().__init__(env, name, queue_params, server_params)
-
-#     def schedule(self):
-#         while True:
-#             product, request = self.request_server()
-#             if product is not None:
-#                 if self.qa_check is not None:
-#                     self.qa_check.add_product(product=product)
-#                 else:
-#                     product.is_complete = True
-
-#                 self.server.release(request)
-
-#             else:
-#                 yield self.env.timeout(0.25)
 
 class QACheck(System):
     def __init__(
@@ -155,10 +133,15 @@ class QACheck(System):
     def _move_to_next_production_line(self, product: Product):
         print(
             f"At time t = {self.env.now}, QACheck MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
-        # all_lines = self.production_lines
+        all_lines: list[System] = []
+        if self.production_lines is None:
+            return
 
-        # all_lines = np.random.choice(production_line, 3, p=[0.5, 0.4, 0.1])
-        # all_lines[0].add_product(product=product)
+        for line in enumerate(self.production_lines):
+            all_lines.append(line)
+        
+        next_lines = np.random.choice(np.array(all_lines)[:3], 3, p=[0.5, 0.4, 0.1])
+        all_lines[0].add_product(product=product)
         return
 
     def run(self):

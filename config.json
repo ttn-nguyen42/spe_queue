@@ -4,12 +4,12 @@
     "mean_interarrival_time": 0.5
   },
   "dispatcher": {
-    "name": "dispatcher",
+    "name": "dispatcher0",
     "max_queue_size": 5000,
     "max_servers": 20,
     "mean_service_time": 5
   },
-  "products": [
+  "productionlines": [
     {
       "name": "production_line_a",
       "max_queue_size": 2000,

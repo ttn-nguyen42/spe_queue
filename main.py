@@ -120,11 +120,10 @@ class Factory:
             f"------------------------\nAt time t =  {self.env.now}, Museum CLOSES\n------------------------")
         # self.hallway.stop_idle()
         # self.hallway.stop_active()
-        self.dispatcher.stop_idle()
-        self.dispatcher.stop_active()
+        self.dispatcher.stop()
         for r in self.products:
-            r.stop_idle()
-            r.stop_active()
+            r.stop()
+            # r._stop_active()
         return
 
     def configure(self, config_path: str):
@@ -146,7 +145,7 @@ class Factory:
 
     def _generate_products(self) -> List[ProductionLine]:
         productionline: List[ProductLine] = []
-        cfgs = self.dat["products"]
+        cfgs = self.dat["productionlines"]
         for productionline_cfg in cfgs:
             productionline.append(ProductionLine(
                 env=self.env,
