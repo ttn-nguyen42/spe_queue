@@ -88,7 +88,6 @@ class Factory:
         self.configure(config_path=config_path)
 
         self.products = self._generate_products()
-
         dispatcher_cfg = self.dat["dispatcher"]
         self.dispatcher = Dispatcher(
             env=self.env,
@@ -122,12 +121,9 @@ class Factory:
         yield self.env.timeout(pr.SIM_DURATION)
         print(
             f"------------------------\nAt time t =  {self.env.now}, Museum CLOSES\n------------------------")
-        # self.hallway.stop_idle()
-        # self.hallway.stop_active()
         self.dispatcher.stop()
         for r in self.products:
             r.stop()
-            # r._stop_active()
         return
 
     def configure(self, config_path: str):
@@ -140,7 +136,6 @@ class Factory:
         print(
             f"------------------------\nAt time t =  {self.env.now}, Factory OPENS\n------------------------")
         self._start_products()
-        # self.hallway.run()
         self.dispatcher.run()
         self.generator.run()
         proc = self.env.process(self.close())
@@ -174,11 +169,12 @@ class Factory:
         print(
             f"------------------------\nSimulation time = {pr.SIM_DURATION}\n------------------------")
         tb = PrettyTable(["system_name", "total_idle_time",
-                         "avg_service_time", "avg_wait_time", "products"])
+                         "avg_service_time", "avg_wait_time", "processed_products", "remaining_products", "utilization"])
         tb.add_row(self.dispatcher.get_stats().list_stats())
         for r in self.products:
             tb.add_row(r.get_stats().list_stats())
         tb.align["system_name"] = "l"
+
         print(tb)
 
         print(

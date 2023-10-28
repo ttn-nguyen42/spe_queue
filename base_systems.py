@@ -114,6 +114,7 @@ class System:
             active_start = self.env.now
             print(
                 f"At time t = {active_start}, {self.get_name()} ACTIVE starts")
+
             yield self.env.timeout(SIM_DURATION)
         except sp.Interrupt:
             active_end = self.env.now

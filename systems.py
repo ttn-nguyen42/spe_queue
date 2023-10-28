@@ -16,7 +16,9 @@ class ProductionLine(System):
             env: sp.Environment,
             params: SystemParams,
             queue_params: QueueParams,
-            server_params: ServerParams) -> None:
+            server_params: ServerParams,
+            production_lines: System = None) -> None:
+        self.production_lines = production_lines
         # self.env = env
         # self.params = params
         # self.queue_params = queue_params
@@ -87,8 +89,9 @@ class Dispatcher(System):
         if self.production_lines is None:
             return
         
-        next_lines = np.random.choice(np.array(all_lines), 3, p=[0.5, 0.4, 0.1])
+        next_lines = np.random.choice(np.array(all_lines)[:3], 1, p=[0.5, 0.4, 0.1])
         next_lines[0].add_product(product=product)
+        
         return
 
     def run(self):
