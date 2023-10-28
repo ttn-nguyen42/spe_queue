@@ -1,7 +1,7 @@
 import simpy as sp
 import numpy as np
 from params import ServerParams, QueueParams, SystemParams, SIM_DURATION
-from visitor import Visitor, VisitorStatistics
+from product import Product, ProductStatistics
 from servers import VisitorServer
 from qs import Queue
 from system_stats import SystemStatistics

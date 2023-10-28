@@ -1,4 +1,4 @@
-from visitor import Visitor
+from product import Product
 from typing import List
 import params as pr
 

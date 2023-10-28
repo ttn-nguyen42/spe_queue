@@ -1,7 +1,7 @@
 from typing import List
 
 
-class VisitorStatistics:
+class ProductStatistics:
     def __init__(self) -> None:
         self.wait_time: float = 0.0
         self.service_time: float = 0.0
@@ -26,13 +26,13 @@ class VisitorStatistics:
 
 
 class Entry:
-    def __init__(self, id: str, stats: VisitorStatistics) -> None:
+    def __init__(self, id: str, stats: ProductStatistics) -> None:
         self.id = id
         self.stats = stats
         pass
 
 
-class Visitor:
+class Product:
 
     def __init__(self, name: str) -> None:
         self.name = name
