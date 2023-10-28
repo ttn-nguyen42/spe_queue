@@ -12,14 +12,14 @@ class Queue:
         self,
         params: pr.QueueParams,
     ) -> None:
-        self.visitors: List[Visitor] = []
+        self.products: List[Products] = []
         self.params = params
         return
 
     def enqueue(self, product: Product):
         if self.is_full():
             raise Exception("queue is full")
-        self.visitors.append(visitor)
+        self.products.append(product)
 
     def dequeue(self) -> Product:
         if self.is_empty():

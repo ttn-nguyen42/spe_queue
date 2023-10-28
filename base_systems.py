@@ -16,7 +16,6 @@ class SystemScheduleResult:
 
 
 class System:
-
     def __init__(
         self,
         env: sp.Environment,

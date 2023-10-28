@@ -44,7 +44,7 @@ class Product:
 
     def visited(self, queue_id: str):
         self.queues_visited.append(
-            Entry(id=queue_id, stats=VisitorStatistics()),
+            Entry(id=queue_id, stats=ProductStatistics()),
         )
 
     def has_visited(self, queue_id: str):
