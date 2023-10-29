@@ -143,7 +143,7 @@ class QACheck(System):
         for line in enumerate(self.production_lines):
             all_lines.append(line)
         
-        next_lines = np.random.choice(np.array(all_lines)[:3], 3, p=[0.5, 0.4, 0.1])
+        next_lines = np.random.choice(np.array(all_lines)[-2:], 2, p=[0.6, 0.4])
         all_lines[0].add_product(product=product)
         return
 
