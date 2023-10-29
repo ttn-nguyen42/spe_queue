@@ -48,11 +48,15 @@ class ProductionLine(System):
         print(
             f"At time t = {self.env.now}, ProductionLine MOVE_TO_CHECK_LINE product = {product.get_name()}")
         all_lines = self.production_lines
+        next_lines = []
+
         if self.production_lines is None:
             return
-        
-        next_lines.add_product(product=product)
-        
+
+        # for line in all_lines:
+            # if line.get_name() == self.get_name():
+        next_lines.append(product=product)
+                
         return
 
     def run(self):
@@ -70,9 +74,9 @@ class Dispatcher(System):
         self.production_lines = production_lines
         super().__init__(env, params, queue_params, server_params)
 
-    def set_production_lines(self, production_lines: list[ProductionLine]):
-        self.production_lines = production_lines
-        return self
+    # def set_production_lines(self, production_lines: list[ProductionLine]):
+    #     self.production_lines = production_lines
+    #     return self
     
 
     def schedule(self):
@@ -151,11 +155,14 @@ class QACheck(System):
     def _move_to_next_production_line(self, product: Product):
         print(
             f"At time t = {self.env.now}, QACheck MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
-        # next_lines = self.production_lines
+        all_lines = self.production_lines
         if self.production_lines is None:
             return
-        
-        next_lines = np.random.choice(np.array(all_lines[-2:]), 2, p=[0.6, 0.4])[0]
+
+        print(
+            f"================ At time t = {self.get_name()}, ProductionLine MOVE_TO_CHECK_LINE product")
+       
+        next_lines = np.random.choice(np.array(all_lines[:2]), 2, p=[0.6, 0.4])[0]
         next_lines[0].add_product(product=product)
         return
 
