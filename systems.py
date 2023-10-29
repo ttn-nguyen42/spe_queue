@@ -19,10 +19,6 @@ class ProductionLine(System):
             server_params: ServerParams,
             production_lines: System = None) -> None:
         self.production_lines = production_lines
-        # self.env = env
-        # self.params = params
-        # self.queue_params = queue_params
-        # self.server_params = server_params
         super().__init__(env, params=params, queue_params=queue_params, server_params=server_params)
                 
     def schedule(self):
@@ -100,8 +96,6 @@ class Dispatcher(System):
         print(
             f"At time t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
         all_lines = self.production_lines
-        # print(
-        #     f"At time t = {np.array(all_lines[:4])}, Dispatcher MOVE_TO_PRODUCTION_LINE")
         
         if self.production_lines is None:
             return
@@ -122,7 +116,7 @@ class QACheck(System):
             params: SystemParams,
             queue_params: QueueParams,
             server_params: ServerParams,
-            production_lines: System = None) -> None:    
+            production_lines: list[ProductionLine] = None) -> None:    
         self.production_lines = production_lines
         super().__init__(env, params, queue_params, server_params)
 
@@ -157,9 +151,6 @@ class QACheck(System):
         if self.production_lines is None:
             return
 
-        print(
-            f"================ At time t = {self.get_name()}, ProductionLine MOVE_TO_CHECK_LINE product")
-       
         next_lines = np.random.choice(np.array(all_lines[:2]), 2, p=[0.6, 0.4])[0]
         next_lines[0].add_product(product=product)
         return
