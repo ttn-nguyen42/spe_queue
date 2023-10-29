@@ -4,7 +4,7 @@ import params as pr
 from product import Product
 from qs import Queue
 from params import ServerParams, QueueParams, SystemParams
-from servers import ProductionLineServer, DispatcherServer, ProductServer
+from servers import ProductionLineServer, DispatcherServer, ProductServer, QACheckServer
 from system_stats import SystemStatistics
 import random
 from base_systems import System, SystemScheduleResult
@@ -37,11 +37,23 @@ class ProductionLine(System):
                     yield req
                     self.env.process(self.serve(
                         product=product, req=req, server=server))
+                    self._move_to_next_production_line(product=product)    
                 case _:
                     if self.is_active():
                         yield from self.go_active()
                     else:
                         yield from self.go_idle()
+
+    def _move_to_next_production_line(self, product: Product):
+        print(
+            f"At time t = {self.env.now}, ProductionLine MOVE_TO_CHECK_LINE product = {product.get_name()}")
+        all_lines = self.production_lines
+        if self.production_lines is None:
+            return
+        
+        next_lines.add_product(product=product)
+        
+        return
 
     def run(self):
         super().run()
@@ -86,11 +98,14 @@ class Dispatcher(System):
         print(
             f"At time t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
         all_lines = self.production_lines
+        # print(
+        #     f"At time t = {np.array(all_lines[:4])}, Dispatcher MOVE_TO_PRODUCTION_LINE")
+        
         if self.production_lines is None:
             return
-        
-        next_lines = np.random.choice(np.array(all_lines)[:3], 1, p=[0.5, 0.4, 0.1])
-        next_lines[0].add_product(product=product)
+        else:
+            next_lines = np.random.choice(np.array(all_lines[:3]), 3, p=[0.5, 0.4, 0.1])
+            next_lines[0].add_product(product=product)
         
         return
 
@@ -105,7 +120,7 @@ class QACheck(System):
             params: SystemParams,
             queue_params: QueueParams,
             server_params: ServerParams,
-            production_lines: list[ProductionLine]) -> None:    
+            production_lines: System = None) -> None:    
         self.production_lines = production_lines
         super().__init__(env, params, queue_params, server_params)
 
@@ -136,15 +151,12 @@ class QACheck(System):
     def _move_to_next_production_line(self, product: Product):
         print(
             f"At time t = {self.env.now}, QACheck MOVE_TO_PRODUCTION_LINE product = {product.get_name()}")
-        all_lines: list[System] = []
+        # next_lines = self.production_lines
         if self.production_lines is None:
             return
-
-        for line in enumerate(self.production_lines):
-            all_lines.append(line)
         
-        next_lines = np.random.choice(np.array(all_lines)[:3], 3, p=[0.5, 0.4, 0.1])
-        all_lines[0].add_product(product=product)
+        next_lines = np.random.choice(np.array(all_lines[-2:]), 2, p=[0.6, 0.4])[0]
+        next_lines[0].add_product(product=product)
         return
 
     def run(self):

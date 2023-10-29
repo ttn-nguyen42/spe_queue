@@ -88,6 +88,7 @@ class Factory:
         self.configure(config_path=config_path)
 
         self.products = self._generate_products()
+        self.products += self._generate_products_check()
         dispatcher_cfg = self.dat["dispatcher"]
         self.dispatcher = Dispatcher(
             env=self.env,
@@ -147,6 +148,24 @@ class Factory:
         cfgs = self.dat["productionlines"]
         for productionline_cfg in cfgs:
             productionline.append(ProductionLine(
+                env=self.env,
+                params=pr.SystemParams(
+                    name=productionline_cfg["name"], max_servers=productionline_cfg["max_servers"],
+                ),
+                queue_params=pr.QueueParams(
+                    max_queue_size=productionline_cfg["max_queue_size"],
+                ),
+                server_params=pr.ServerParams(
+                    mean_service_time=productionline_cfg["mean_service_time"],
+                )
+            ))
+        return productionline
+
+    def _generate_products_check(self) -> List[QACheck]:
+        productionline: List[QACheck] = []
+        cfgs = self.dat["qacheck"]
+        for productionline_cfg in cfgs:
+            productionline.append(QACheck(
                 env=self.env,
                 params=pr.SystemParams(
                     name=productionline_cfg["name"], max_servers=productionline_cfg["max_servers"],

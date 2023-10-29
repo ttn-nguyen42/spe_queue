@@ -9,6 +9,20 @@
     "max_servers": 20,
     "mean_service_time": 5
   },
+  "qacheck":[
+  {
+    "name": "qa_check_a",
+    "max_queue_size": 1000,
+    "mean_service_time": 10,
+    "max_servers": 10
+  },
+  {
+    "name": "qa_check_b",
+    "max_queue_size": 3000,
+    "mean_service_time": 30,
+    "max_servers": 20
+  }
+  ],
   "productionlines": [
     {
       "name": "production_line_a",
@@ -20,18 +34,6 @@
       "name": "production_line_b",
       "max_queue_size": 2000,
       "mean_service_time": 10,
-      "max_servers": 20
-    },
-    {
-      "name": "qa_check_a",
-      "max_queue_size": 1000,
-      "mean_service_time": 10,
-      "max_servers": 10
-    },
-    {
-      "name": "qa_check_b",
-      "max_queue_size": 3000,
-      "mean_service_time": 30,
       "max_servers": 20
     },
     {
