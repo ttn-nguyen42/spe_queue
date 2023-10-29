@@ -27,7 +27,7 @@ class ProductionLine(System):
                 
     def schedule(self):
         while True:
-            res, product, req = self.request_server()
+            res, product, req = self.request_server() 
             match res:
                 case SystemScheduleResult.FOUND_PRODUCT:
                     server = ProductionLineServer(
@@ -37,12 +37,18 @@ class ProductionLine(System):
                     yield req
                     self.env.process(self.serve(
                         product=product, req=req, server=server))
+                    self._move_to_next_qa_line(product=product)
                 case _:
                     if self.is_active():
                         yield from self.go_active()
                     else:
-                        yield from self.go_idle()
+                        yield from self.go_idle()  
 
+    def _move_to_next_qa_line(self, product: Product):
+        # next_lines = np.random.choice(np.array(all_lines)[:3], 1, p=[0.5, 0.4, 0.1])
+        # next_lines[0].add_product(product=product) 
+        return
+    
     def run(self):
         super().run()
         self.env.process(self.schedule())
@@ -115,6 +121,7 @@ class QACheck(System):
 
 
     def schedule(self):
+        print("DEF", self.production_lines)
         while True:
             res, product, req = self.request_server()
             match res:

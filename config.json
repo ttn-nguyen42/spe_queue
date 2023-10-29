@@ -23,6 +23,12 @@
       "max_servers": 20
     },
     {
+      "name": "advanced_prod_line",
+      "max_queue_size": 2000,
+      "mean_service_time": 10,
+      "max_servers": 50
+    },
+    {
       "name": "qa_check_a",
       "max_queue_size": 1000,
       "mean_service_time": 10,
@@ -33,12 +39,6 @@
       "max_queue_size": 3000,
       "mean_service_time": 30,
       "max_servers": 20
-    },
-    {
-      "name": "advanced_prod_line",
-      "max_queue_size": 2000,
-      "mean_service_time": 10,
-      "max_servers": 50
     }
   ]
 }

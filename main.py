@@ -49,11 +49,13 @@ class Generator:
         env: sp.Environment,
         params: pr.GeneratorParams,
         dispatcher: Dispatcher,
+        productionline: ProductionLine,
     ) -> None:
         self.env = env
         self.params = params
         self.dispatcher = dispatcher
         self.stats = GeneratorStatistics(env=self.env)
+        self.productionline=productionline
 
     def generate(self):
         while True:
@@ -87,6 +89,7 @@ class Factory:
         self.dat = None
         self.configure(config_path=config_path)
 
+
         self.products = self._generate_products()
         dispatcher_cfg = self.dat["dispatcher"]
         self.dispatcher = Dispatcher(
@@ -103,14 +106,15 @@ class Factory:
             ),
             production_lines=self.products
         )
-
+       
         generator_cfg = self.dat["generator"]
         self.generator = Generator(
-            env=self.env,
+            env=self.env    ,
             params=pr.GeneratorParams(
                 mean_interarrival_time=generator_cfg["mean_interarrival_time"]
             ),
             dispatcher=self.dispatcher,
+            productionline=self.products
         )
 
         sim_time = self.dat["simulation_time"]
