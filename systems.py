@@ -52,9 +52,7 @@ class ProductionLine(System):
 
         if self.production_lines is None:
             return
-
-        # for line in all_lines:
-            # if line.get_name() == self.get_name():
+            
         next_lines.append(product=product)
                 
         return
