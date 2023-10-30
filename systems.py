@@ -151,7 +151,7 @@ class QACheck(System):
         if self.production_lines is None:
             return
 
-        next_lines = np.random.choice(np.array(all_lines[:2]), 2, p=[0.6, 0.4])[0]
+        next_lines = np.random.choice(np.array(all_lines[:2]), 2, p=[0.6, 0.4])
         next_lines[0].add_product(product=product)
         return
 
