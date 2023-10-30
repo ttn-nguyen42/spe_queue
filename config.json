@@ -1,13 +1,13 @@
 {
-  "simulation_time": 100,
+  "simulation_time": 50000,
   "generator": {
-    "mean_interarrival_time": 0.5
+    "mean_interarrival_time": 0.1
   },
   "dispatcher": {
     "name": "dispatcher0",
-    "max_queue_size": 5000,
-    "max_servers": 20,
-    "mean_service_time": 5,
+    "max_queue_size": 9999,
+    "max_servers": 2,
+    "mean_service_time": 10,
     "go_to": [
       {
         "name": "production_line_a",
@@ -26,9 +26,9 @@
   "productionlines": [
     {
       "name": "production_line_a",
-      "max_queue_size": 2000,
+      "max_queue_size": 99999,
       "mean_service_time": 10,
-      "max_servers": 20,
+      "max_servers": 2,
       "go_to": [
         {
           "name": "qa_check_a",
@@ -38,9 +38,9 @@
     },
     {
       "name": "production_line_b",
-      "max_queue_size": 2000,
+      "max_queue_size": 99999,
       "mean_service_time": 10,
-      "max_servers": 20,
+      "max_servers": 2,
       "go_to": [
         {
           "name": "qa_check_b",
@@ -50,9 +50,9 @@
     },
     {
       "name": "advanced_prod_line",
-      "max_queue_size": 2000,
+      "max_queue_size": 99999,
       "mean_service_time": 10,
-      "max_servers": 50,
+      "max_servers": 2,
       "go_to": [
         {
           "name": "exit",
@@ -64,9 +64,9 @@
   "qa_check": [
     {
       "name": "qa_check_a",
-      "max_queue_size": 1000,
+      "max_queue_size": 99999,
       "mean_service_time": 10,
-      "max_servers": 10,
+      "max_servers": 2,
       "go_to": [
         {
           "name": "production_line_a",
@@ -84,9 +84,9 @@
     },
     {
       "name": "qa_check_b",
-      "max_queue_size": 3000,
-      "mean_service_time": 30,
-      "max_servers": 20,
+      "max_queue_size": 9999,
+      "mean_service_time": 10,
+      "max_servers": 2,
       "go_to": [
         {
           "name": "advanced_prod_line",
