@@ -160,6 +160,9 @@ class QACheck(System):
 
     def set_product_lines_destinations(self, destinations: list[Destination]):
         self.production_lines_destinations = destinations
+        self.probabilities = []
+        for line in self.production_lines_destinations:
+            self.probabilities.append(line.probability)
 
     def schedule(self):
         while True:

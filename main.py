@@ -143,6 +143,9 @@ class Factory:
         self.dispatcher.stop()
         for line in self.products:
             self.products[line].stop()
+
+        for qa in self.qa_check:
+            self.qa_check[qa].stop()
         return
 
     def configure(self, config_path: str):
@@ -185,6 +188,8 @@ class Factory:
                 ),
                 go_to=[]
             )
+
+        self.qa_check = qa_check
 
         print(f"QA checks {qa_check}")
 
@@ -272,6 +277,9 @@ class Factory:
         for line in self.products:
             self.products[line].run()
 
+        for qa in self.qa_check:
+            self.qa_check[qa].run()
+
     def stats(self):
         print(
             f"------------------------\nSimulation time = {pr.SIM_DURATION}\n------------------------")
@@ -280,6 +288,10 @@ class Factory:
         tb.add_row(self.dispatcher.get_stats().list_stats())
         for line in self.products:
             r = self.products[line]
+            tb.add_row(r.get_stats().list_stats())
+
+        for qa in self.qa_check:
+            r = self.qa_check[qa]
             tb.add_row(r.get_stats().list_stats())
         tb.align["system_name"] = "l"
 
