@@ -53,6 +53,7 @@ class Generator:
         self.env = env
         self.params = params
         self.dispatcher = dispatcher
+        self.current_id = 0
         self.stats = GeneratorStatistics(env=self.env)
 
     def generate(self):
@@ -72,7 +73,9 @@ class Generator:
                 product=Product(name=self._random_name()))
 
     def _random_name(self) -> str:
-        return uuid.uuid4()
+        curr_id = self.current_id
+        self.current_id += 1
+        return curr_id
 
     def get_stats(self) -> GeneratorStatistics:
         return self.stats
