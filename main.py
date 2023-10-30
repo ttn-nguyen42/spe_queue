@@ -2,7 +2,7 @@ import simpy as sp
 import numpy as np
 import params as pr
 from product import Product
-from systems import ProductionLine, QACheck, Dispatcher
+from systems import ProductionLine, QACheck, Dispatcher, Destination
 from base_systems import System, SystemScheduleResult
 from typing import List
 import uuid
@@ -87,9 +87,24 @@ class Factory:
         self.dat = None
         self.configure(config_path=config_path)
 
-        self.products = self._generate_products()
-        # self.products += self._generate_products_check()
+        self.products = self._generate_systems()
+
+        # self.products += self._generate_systems_check()
         dispatcher_cfg = self.dat["dispatcher"]
+
+        # Initialize dispatcher
+        dispatcher_go_to = dispatcher_cfg["go_to"]
+        product_lines: list[Destination] = []
+        for place in dispatcher_go_to:
+            name = place["name"]
+            probability = place["probability"]
+            system = self.products[name]
+            product_lines.append(Destination(
+                name=name,
+                probability=probability,
+                system=system
+            ))
+
         self.dispatcher = Dispatcher(
             env=self.env,
             params=pr.SystemParams(
@@ -102,7 +117,7 @@ class Factory:
             server_params=pr.ServerParams(
                 mean_service_time=dispatcher_cfg["mean_service_time"],
             ),
-            production_lines=self.products
+            production_lines=product_lines
         )
 
         generator_cfg = self.dat["generator"]
@@ -121,10 +136,10 @@ class Factory:
     def close(self):
         yield self.env.timeout(pr.SIM_DURATION)
         print(
-            f"------------------------\nAt time t =  {self.env.now}, Museum CLOSES\n------------------------")
+            f"------------------------\nAt time t =  {self.env.now}, Factory CLOSES\n------------------------")
         self.dispatcher.stop()
-        for r in self.products:
-            r.stop()
+        for line in self.products:
+            self.products[line].stop()
         return
 
     def configure(self, config_path: str):
@@ -143,13 +158,16 @@ class Factory:
         self.env.run(until=proc)
         self.stats()
 
-    def _generate_products(self) -> List[ProductionLine]:
-        productionline: List[ProductionLine] = []
+    def _generate_systems(self) -> dict[str, ProductionLine]:
+        productionline: dict[str, ProductionLine] = {}
         qa_check: dict[str, QACheck] = {}
+
         qa_cfgs = self.dat["qa_check"]
 
+        # Initialize all QA check lines
         for cfg in qa_cfgs:
             name = cfg["name"]
+
             qa_check[name] = QACheck(
                 env=self.env,
                 params=pr.SystemParams(
@@ -162,19 +180,41 @@ class Factory:
                 server_params=pr.ServerParams(
                     mean_service_time=cfg["mean_service_time"]
                 ),
-                production_lines=[]
+                go_to=[]
             )
+
+        print(f"QA checks {qa_check}")
 
         cfgs = self.dat["productionlines"]
 
+        # Initialize all production lines
         for productionline_cfg in cfgs:
+            name = productionline_cfg["name"]
             go_to = productionline_cfg["go_to"]
-            # if a production line has no go_to, it goes straight to exit
-            destination_qa_check = None
-            if go_to != "":
-                destination_qa_check = qa_check[go_to]
 
-            productionline.append(ProductionLine(
+            # collect all destination QA check lines for a production line
+            destination_qa_check = []
+            if len(go_to) > 0:
+                for where in go_to:
+                    dest_name = where["name"]
+
+                    if dest_name == "exit":
+                        destination = Destination(
+                            name=dest_name,
+                            probability=where["probability"],
+                            system=None
+                        )
+                        destination_qa_check.append(destination)
+                        continue
+
+                    destination = Destination(
+                        name=dest_name,
+                        probability=where["probability"],
+                        system=qa_check[dest_name]
+                    )
+                    destination_qa_check.append(destination)
+
+            productionline[name] = ProductionLine(
                 env=self.env,
                 params=pr.SystemParams(
                     name=productionline_cfg["name"],
@@ -187,13 +227,47 @@ class Factory:
                     mean_service_time=productionline_cfg["mean_service_time"],
                 ),
                 qa_check=destination_qa_check,
-            ))
+            )
+
+        print(f"Production lines: {productionline}")
+
+        for cfg in qa_cfgs:
+            name = cfg["name"]
+
+            qa_check_line = qa_check[name]
+            destinations: list[ProductionLine] = []
+
+            go_to_list = cfg["go_to"]
+
+            for dest in go_to_list:
+                name = dest["name"]
+                probability = dest["probability"]
+
+                if name == "exit":
+                    destinations.append(Destination(
+                        name=name,
+                        probability=probability,
+                        system=None,
+                    ))
+                    continue
+
+                system = productionline[name]
+
+                destinations.append(Destination(
+                    name=name,
+                    probability=probability,
+                    system=system
+                ))
+
+            # set product line destinations for QA check lines
+            qa_check_line.set_product_lines_destinations(
+                destinations=destinations)
+
         return productionline
 
     def _start_products(self):
-        i = 0
-        for r in self.products:
-            r.run()
+        for line in self.products:
+            self.products[line].run()
 
     def stats(self):
         print(
@@ -201,7 +275,8 @@ class Factory:
         tb = PrettyTable(["system_name", "total_idle_time",
                          "avg_service_time", "avg_wait_time", "processed_products", "remaining_products", "utilization"])
         tb.add_row(self.dispatcher.get_stats().list_stats())
-        for r in self.products:
+        for line in self.products:
+            r = self.products[line]
             tb.add_row(r.get_stats().list_stats())
         tb.align["system_name"] = "l"
 
