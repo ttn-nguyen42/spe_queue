@@ -145,8 +145,35 @@ class Factory:
 
     def _generate_products(self) -> List[ProductionLine]:
         productionline: List[ProductionLine] = []
+        qa_check: dict[str, QACheck] = {}
+        qa_cfgs = self.dat["qa_check"]
+
+        for cfg in qa_cfgs:
+            name = cfg["name"]
+            qa_check[name] = QACheck(
+                env=self.env,
+                params=pr.SystemParams(
+                    name=name,
+                    max_servers=cfg["max_servers"]
+                ),
+                queue_params=pr.QueueParams(
+                    max_queue_size=cfg["max_queue_size"]
+                ),
+                server_params=pr.ServerParams(
+                    mean_service_time=cfg["mean_service_time"]
+                ),
+                production_lines=[]
+            )
+
         cfgs = self.dat["productionlines"]
+
         for productionline_cfg in cfgs:
+            go_to = productionline_cfg["go_to"]
+            # if a production line has no go_to, it goes straight to exit
+            destination_qa_check = None
+            if go_to != "":
+                destination_qa_check = qa_check[go_to]
+
             productionline.append(ProductionLine(
                 env=self.env,
                 params=pr.SystemParams(
@@ -157,7 +184,8 @@ class Factory:
                 ),
                 server_params=pr.ServerParams(
                     mean_service_time=productionline_cfg["mean_service_time"],
-                )
+                ),
+                qa_check=destination_qa_check,
             ))
         return productionline
 
@@ -186,4 +214,3 @@ class Factory:
 if __name__ == "__main__":
     ms = Factory(config_path="./config.json")
     ms.open()
- 

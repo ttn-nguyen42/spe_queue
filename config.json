@@ -14,20 +14,25 @@
       "name": "production_line_a",
       "max_queue_size": 2000,
       "mean_service_time": 10,
-      "max_servers": 20
+      "max_servers": 20,
+      "go_to": "qa_check_a"
     },
     {
       "name": "production_line_b",
       "max_queue_size": 2000,
       "mean_service_time": 10,
-      "max_servers": 20
+      "max_servers": 20,
+      "go_to": "qa_check_b"
     },
     {
       "name": "advanced_prod_line",
       "max_queue_size": 2000,
       "mean_service_time": 10,
-      "max_servers": 50
-    },
+      "max_servers": 50,
+      "go_to": ""
+    }
+  ],
+  "qa_check": [
     {
       "name": "qa_check_a",
       "max_queue_size": 1000,
