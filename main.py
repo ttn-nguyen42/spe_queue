@@ -177,7 +177,8 @@ class Factory:
             productionline.append(ProductionLine(
                 env=self.env,
                 params=pr.SystemParams(
-                    name=productionline_cfg["name"], max_servers=productionline_cfg["max_servers"],
+                    name=productionline_cfg["name"],
+                    max_servers=productionline_cfg["max_servers"],
                 ),
                 queue_params=pr.QueueParams(
                     max_queue_size=productionline_cfg["max_queue_size"],

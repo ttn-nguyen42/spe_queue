@@ -47,10 +47,10 @@ class ProductionLine(System):
         if self.qa_check != None:
             self.qa_check.add_product(product=product)
             print(
-                f"At time t = {self.env.now}, ProductionLine MOVE_TO_CHECK_LINE productionline = {product.get_name()} qa_check={self.qa_check.get_name()}")
+                f"At time t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} qa_check={self.qa_check.get_name()}")
         else:
             print(
-                f"At time t = {self.env.now}, ProductionLine MOVE_TO_CHECK_LINE productionline = {product.get_name()} straight to exit")
+                f"At time t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} straight to exit")
         return
 
     def run(self):
