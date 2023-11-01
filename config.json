@@ -1,0 +1,92 @@
+{
+  "dispatcher": {
+    "name": "dispatcher",
+    "mean_service_time": 360,
+    "max_servers": 2,
+    "go_to": [
+      {
+        "name": "production_line_a",
+        "probability": 0.5
+      },
+      {
+        "name": "production_line_b",
+        "probability": 0.4
+      },
+      {
+        "name": "advanced_prod_line",
+        "probability": 0.1
+      }
+    ]
+  },
+  "productionlines": [
+    {
+      "name": "production_line_a",
+      "mean_service_time": 1200,
+      "max_servers": 4,
+      "go_to": [
+        {
+          "name": "qa_check_a",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "name": "production_line_b",
+      "mean_service_time": 1800,
+      "max_servers": 4,
+      "go_to": [
+        {
+          "name": "qa_check_b",
+          "probability": 1.0
+        }
+      ]
+    },
+    {
+      "name": "advanced_prod_line",
+      "mean_service_time": 1800,
+      "max_servers": 3,
+      "go_to": [
+        {
+          "name": "exit",
+          "probability": 1.0
+        }
+      ]
+    }
+  ],
+  "qa_check": [
+    {
+      "name": "qa_check_a",
+      "mean_service_time": 800,
+      "max_servers": 3,
+      "go_to": [
+        {
+          "name": "advanced_prod_line",
+          "probability": 0.25
+        },
+        {
+          "name": "exit",
+          "probability": 0.75
+        }
+      ]
+    },
+    {
+      "name": "qa_check_b",
+      "mean_service_time": 800,
+      "max_servers": 2,
+      "go_to": [
+        {
+          "name": "production_line_a",
+          "probability": 0.05
+        },
+        {
+          "name": "production_line_b",
+          "probability": 0.05
+        },
+        {
+          "name": "exit",
+          "probability": 0.9
+        }
+      ]
+    }
+  ]
+}
