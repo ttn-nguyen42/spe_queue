@@ -193,8 +193,6 @@ class Factory:
 
         self.qa_check = qa_check
 
-        print(f"QA checks {qa_check}")
-
         cfgs = self.dat["productionlines"]
 
         # Initialize all production lines
@@ -235,8 +233,6 @@ class Factory:
                 ),
                 qa_check=destination_qa_check,
             )
-
-        print(f"Production lines: {productionline}")
 
         for cfg in qa_cfgs:
             name = cfg["name"]
