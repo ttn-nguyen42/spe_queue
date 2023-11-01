@@ -1,7 +1,5 @@
 # spe_queue
 
-# Project Name
-
 Brief description of the project.
 
 ## Table of Contents
