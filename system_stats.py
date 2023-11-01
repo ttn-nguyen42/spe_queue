@@ -4,15 +4,17 @@ class SystemStatistics:
 
         self.total_idle_time: float = 0.0
 
+        self.total_interarrival_time: float = 0.0
+        
         self.total_service_time: float = 0.0
         self.total_service_requests: int = 0
 
         self.total_wait_time: float = 0.0
-        self.total_visitor_count: int = 0
-
-        self.in_queue_at_end: int = 0
-
+        self.total_product_count: int = 0
+        
         self.utilization: float = 0.0
+        self.total_product_count: int = 0
+        self.in_queue_at_end: int = 0
         pass
 
     def __str__(self) -> str:
@@ -22,11 +24,16 @@ class SystemStatistics:
         if self.total_service_requests == 0:
             return 0.0
         return self.total_service_time / self.total_service_requests
+    
+    def avg_interarrival_time(self) -> float:
+        if self.total_product_count == 0:
+            return 0.0
+        return self.total_interarrival_time / (self.total_product_count + self.in_queue_at_end)
 
     def avg_wait_time(self) -> float:
-        if self.total_visitor_count == 0:
+        if self.total_product_count == 0:
             return 0.0
-        return self.total_wait_time / (self.total_visitor_count + self.in_queue_at_end)
+        return self.total_wait_time / (self.total_product_count + self.in_queue_at_end)
 
     def update_idle_time(self, idle_time: float):
         self.total_idle_time += idle_time
@@ -35,6 +42,10 @@ class SystemStatistics:
     def set_in_queue_at_end(self, amount: int):
         self.in_queue_at_end = amount
 
+    def update_total_interarrival_time(self, interarrival_time: float):
+        self.total_interarrival_time += interarrival_time
+        return
+    
     def update_service_requests(self):
         self.total_service_requests += 1
         return
@@ -43,37 +54,38 @@ class SystemStatistics:
         self.total_service_time += service_time
         return
 
-    def update_visitor_count(self):
-        self.total_visitor_count += 1
+    def update_product_count(self):
+        self.total_product_count += 1
         return
 
     def update_wait_time(self, wait_time: float):
         self.total_wait_time += wait_time
         return
 
-    def update_utilization(self, avg_servers_usage: float, max_servers: int):
-        self.utilization = avg_servers_usage / max_servers * 100
+    def update_utilization(self, max_servers: int):
+        self.utilization = self.arrival_rate() / (max_servers * self.service_rate())
         return
+    
+    def get_avg_in_sys(self):
+        return self.utilization / (1 - self.utilization)
+    
+    def get_avg_in_queue(self):
+        return  self.utilization / (1 - self.utilization) - self.utilization
+    
+    def arrival_rate(self) -> float:
+        return 3600 / self.avg_interarrival_time()
+    
+    def service_rate(self) -> float:
+        return 3600 / self.avg_service_time()
 
     def list_stats(self) -> list:
         stats = []
         stats.append(self.system_name)
-        stats.append(round(self.total_idle_time, 5))
-        stats.append(round(self.avg_service_time(), 5))
-        stats.append(round(self.avg_wait_time(), 5))
-        stats.append(self.total_visitor_count)
+        stats.append(str(round(self.arrival_rate(), 4)))
+        stats.append(str(round(self.service_rate(), 4)))
+        stats.append(str(round(self.utilization, 4)))
+        stats.append(round(self.get_avg_in_sys(), 4))
+        stats.append(round(self.get_avg_in_queue(), 4))
+        stats.append(self.total_product_count)
         stats.append(self.in_queue_at_end)
-        stats.append(round(self.utilization, 5))
         return stats
-
-
-# class EndStats:
-#     def __init__(self) -> None:
-#         self.visitor_finished: int = 0
-#         pass
-
-#     def update_visitor_finished(self):
-#         self.visitor_finished += 1
-
-#     def get_visitor_finished(self):
-#         return self.visitor_finished

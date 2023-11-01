@@ -1,0 +1,6 @@
+{
+  "simulation_time": 1209600,
+  "generator": {
+    "mean_interarrival_time": 360
+  }
+}

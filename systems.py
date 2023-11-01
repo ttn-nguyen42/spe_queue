@@ -1,173 +1,198 @@
 import simpy as sp
-from params import ServerParams, QueueParams, SystemParams
-from visitor import Visitor
-from servers import ReceptionServer, RoomServer, HallwayServer
-import random
+import numpy as np
+from product import Product
+from params import ServerParams, SystemParams
+from servers import ProductionLineServer, DispatcherServer, QACheckServer
 from base_systems import System, SystemScheduleResult
 
 
-class Room(System):
+class Destination:
     def __init__(
-            self,
-            env: sp.Environment,
-            params: SystemParams,
-            queue_params: QueueParams,
-            server_params: ServerParams,
-            hallway: System = None) -> None:
-        self.hallway = hallway
-        super().__init__(env, params, queue_params, server_params)
-
-    def set_hallway(self, hallway: System):
-        self.hallway = hallway
-        return self
-
-    # Moves visitor to hallway
-
-    def schedule(self):
-        while True:
-            res, visitor, req = self.request_server()
-            match res:
-                case SystemScheduleResult.FOUND_VISITOR:
-                    server = RoomServer(
-                        env=self.env,
-                        params=self.server_params,
-                    )
-                    yield req
-                    self.env.process(self.serve(
-                        visitor=visitor, req=req, server=server))
-                    self._move_to_hallway(visitor=visitor)
-                case _:
-                    if self.is_active():
-                        yield from self.go_active()
-                    else:
-                        yield from self.go_idle()
-
-    def _move_to_hallway(self, visitor: Visitor):
-        print(
-            f"At time t = {self.env.now}, Room TO_HALLWAY visitor = {visitor.get_name()}")
-        self.hallway.add_visitor(visitor=visitor)
-        visitor.visited(self.get_name())
-
-    def run(self):
-        super().run()
-        self.env.process(self.schedule())
-
-
-class Hallway(System):
-    def __init__(
-            self,
-            env: sp.Environment,
-            params: SystemParams,
-            queue_params: QueueParams,
-            server_params: ServerParams,
-            rooms: list[Room] = None) -> None:
-        self.rooms = rooms
-        super().__init__(env, params, queue_params, server_params)
-
-    def set_rooms(self, rooms: list[System]):
-        self.rooms = rooms
-        return self
-
-    # Moves its visitor to rooms
-    def schedule(self):
-        while True:
-            res, visitor, req = self.request_server()
-            match res:
-                case SystemScheduleResult.FOUND_VISITOR:
-                    server = HallwayServer(
-                        env=self.env,
-                        params=self.server_params,
-                    )
-                    yield req
-                    self.env.process(self.serve(
-                        visitor=visitor, req=req, server=server))
-                    self._send_to_unvisited_room(visitor=visitor)
-                case _:
-                    if self.is_active():
-                        yield from self.go_active()
-                    else:
-                        yield from self.go_idle()
-
-    def _send_to_unvisited_room(self, visitor: Visitor):
-        # Find unvisited room and returns an index
-        # self.rooms
-        all_rooms = self.rooms
-        available_rooms = []
-        for i, r in enumerate(all_rooms):
-            if visitor.has_visited(r.get_name()):
-                available_rooms.append(r)
-        if len(available_rooms) == 0:
-            print("Hallway VISITOR_DONE")
-            return
-        available_rooms.sort(key=self.availability)
-        available_rooms[0].add_visitor(visitor=visitor)
-        return
-
-    def run(self):
-        super().run()
-        self.env.process(self.schedule())
-
-
-class Reception(System):
-    def __init__(
-            self,
-            env: sp.Environment,
-            params: SystemParams,
-            queue_params: QueueParams,
-            server_params: ServerParams,
-            rooms: list[Room] = None,
-            hallway: Hallway = None
+        self,
+        name: str,
+        probability: float,
+        system: System,
     ) -> None:
-        self.rooms = rooms
-        self.hallway = hallway
-        super().__init__(env, params, queue_params, server_params)
+        self.name = name
+        self.probability = probability
+        self.system = system
+        pass
 
-    def set_rooms(self, rooms: list[Room]):
-        self.rooms = rooms
-        return self
 
-    def set_hallway(self, hallway: Hallway):
-        self.hallway = hallway
-        return self
+class ProductionLine(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: SystemParams,
+            server_params: ServerParams,
+            qa_check: list[Destination]) -> None:
+        self.qa_check_destinations = qa_check
+        self.probabilties = []
+        for destination in self.qa_check_destinations:
+            self.probabilties.append(destination.probability)
+        super().__init__(env, params=params, server_params=server_params)
 
     def schedule(self):
         while True:
-            res, visitor, req = self.request_server()
+            res, product, req = self.request_server()
             match res:
-                case SystemScheduleResult.FOUND_VISITOR:
-                    server = ReceptionServer(
+                case SystemScheduleResult.FOUND_PRODUCT:
+                    server = ProductionLineServer(
                         env=self.env,
                         params=self.server_params,
                     )
                     yield req
                     self.env.process(self.serve(
-                        visitor=visitor, req=req, server=server))
-                    self._move_to_room(visitor=visitor)
+                        product=product, req=req, server=server))
+                    self._move_to_next_production_line(product=product)
                 case _:
                     if self.is_active():
                         yield from self.go_active()
                     else:
                         yield from self.go_idle()
 
-    # Move visitor to room
-    def _move_to_room(self, visitor: Visitor):
-        print(
-            f"At time t = {self.env.now}, Reception MOVE_TO_ROOM visitor = {visitor.get_name()}")
-
-        # Check which room available
-        avail_room: list[System] = []
-
-        for room in self.rooms:
-            if room.is_available() and not room.is_full():
-                avail_room.append(room)
-
-        if len(avail_room) > 0:
-            avail_room.sort(key=self.availability)
-            avail_room[0].add_visitor(visitor=visitor)
+    def _move_to_next_production_line(self, product: Product):
+        # a production line either moves the product to the end, or another QA line
+        if len(self.qa_check_destinations) == 0:
+            # print(
+            #     f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} STRAIGHT TO EXIT")
             return
 
-        self.hallway.add_visitor(visitor=visitor)
+        probabilities = self.probabilties
+        next_lines = np.random.choice(
+            self.qa_check_destinations, 1, p=probabilities)
+        next_line = next_lines[0]
+
+        # if got destination of exit, do nothing
+        if next_line.name == "exit":
+            # print(
+            #     f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} EXIT probability = {next_line.probability}")
+            return
+
+        next_line.system.add_product(product=product)
+        # print(
+        #     f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} qa_check={next_line.name} probability = {next_line.probability}")
+
+    def run(self):
+        super().run()
+        self.env.process(self.schedule())
+
+
+class Dispatcher(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: SystemParams,
+            server_params: ServerParams,
+            production_lines: list[Destination]) -> None:
+        self.production_lines = production_lines
+        self.line_probabilities = []
+        for line in production_lines:
+            self.line_probabilities.append(line.probability)
+
+        super().__init__(env, params, server_params)
+
+    def schedule(self):
+        while True:
+            res, product, req = self.request_server()
+            match res:
+                case SystemScheduleResult.FOUND_PRODUCT:
+                    server = DispatcherServer(
+                        env=self.env,
+                        params=self.server_params,
+                    )
+                    yield req
+                    self.env.process(self.serve(
+                        product=product, req=req, server=server))
+                    self._move_to_next_production_line(product=product)
+                case _:
+                    if self.is_active():
+                        yield from self.go_active()
+                    else:
+                        yield from self.go_idle()
+
+    def _move_to_next_production_line(self, product: Product):
+
+        if (self.production_lines is None) or (len(self.production_lines) == 0):
+            print(f"Dispatcher have no production lines, this must not happens")
+            exit(10)
+        else:
+            next_lines = np.random.choice(
+                self.production_lines, 1, p=self.line_probabilities)
+            next_line = next_lines[0]
+
+            next_line.system.add_product(product=product)
+            # print(
+            #     f"t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE line = {next_line.name} probability = {next_line.probability} product = {product.get_name()}")
+
         return
+
+    def run(self):
+        super().run()
+        self.env.process(self.schedule())
+
+
+class QACheck(System):
+    def __init__(
+            self,
+            env: sp.Environment,
+            params: SystemParams,
+            server_params: ServerParams,
+            go_to: list[Destination]) -> None:
+        self.production_lines_destinations = go_to
+        self.probabilities = []
+        for line in self.production_lines_destinations:
+            self.probabilities.append(line.probability)
+        super().__init__(env, params, server_params)
+
+    def set_production_lines(self, production_lines: list[ProductionLine]):
+        self.production_lines = production_lines
+        return self
+
+    def set_product_lines_destinations(self, destinations: list[Destination]):
+        self.production_lines_destinations = destinations
+        self.probabilities = []
+        for line in self.production_lines_destinations:
+            self.probabilities.append(line.probability)
+
+    def schedule(self):
+        while True:
+            res, product, req = self.request_server()
+            match res:
+                case SystemScheduleResult.FOUND_PRODUCT:
+                    server = QACheckServer(
+                        env=self.env,
+                        params=self.server_params,
+                    )
+                    yield req
+                    self.env.process(self.serve(
+                        product=product, req=req, server=server))
+                    self._move_to_next_production_line(product=product)
+                case _:
+                    if self.is_active():
+                        yield from self.go_active()
+                    else:
+                        yield from self.go_idle()
+
+    def _move_to_next_production_line(self, product: Product):
+        if len(self.production_lines_destinations) == 0:
+            # print(
+            #     f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} STRAIGHT TO EXIT")
+            return
+
+        next_lines = np.random.choice(
+            self.production_lines_destinations, 1, p=self.probabilities)
+        next_line = next_lines[0]
+
+        # if got destination of exit, do nothing
+        if next_line.name == "exit":
+            # print(
+            #     f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} EXIST probability = {next_line.probability}")
+            return
+
+        next_line.system.add_product(product=product)
+        # print(
+        #     f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} production_line = {next_line.name} probability = {next_line.probability}")
 
     def run(self):
         super().run()

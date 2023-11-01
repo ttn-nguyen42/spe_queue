@@ -1,23 +1,38 @@
-from typing import List, Dict
-
-
-class VisitorStatistics:
+class ProductStatistics:
     def __init__(self) -> None:
-        self.start_wait_time: float = 0.0
-        self.end_wait_time: float = 0.0
+        self.wait_time: float = 0.0
+        self.service_time: float = 0.0
+        pass
+
+    def set_wait_time(self, t: float):
+        self.wait_time = t
+        return self
+
+    def set_service_time(self, t: float):
+        self.service_time = t
+        return self
 
     def __str__(self) -> str:
-        return f"wait_time={self.get_wait_time()} start_wait_time={self.start_wait_time} end_wait_time={self.end_wait_time}"
+        return f"wait_time = {self.wait_time} service_time = {self.service_time}"
 
     def get_wait_time(self) -> str:
-        return self.end_wait_time - self.start_wait_time
+        return self.wait_time
+
+    def get_service_time(self) -> str:
+        return self.service_time
 
 
-class Visitor:
+class Entry:
+    def __init__(self, id: str, stats: ProductStatistics) -> None:
+        self.id = id
+        self.stats = stats
+        pass
 
+
+class Product:
     def __init__(self, name: str) -> None:
         self.name = name
-        self.queues_visited: dict[str, VisitorStatistics] = {}
+        self.queues_visited: dict[str, ProductStatistics] = {}
 
     def __str__(self) -> str:
         return f"name={self.name} visited={self.queues_visited} wait_time={self.get_total_wait_time()} service_time={self.get_total_service_time()}"
@@ -26,7 +41,7 @@ class Visitor:
         return self.name
 
     def visited(self, queue_id: str):
-        self.queues_visited[queue_id] = VisitorStatistics(),
+        self.queues_visited[queue_id] = ProductStatistics(),
 
     def has_visited(self, queue_id: str):
         res = self.queues_visited.get(queue_id)
@@ -43,7 +58,6 @@ class Visitor:
         if res is None:
             raise Exception("not exists")
         res.end_wait_time = end
-        print(f"STAT: {res}")
 
     def started_waiting_at(self, id: str) -> float:
         res = self.queues_visited[id]
