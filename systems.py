@@ -59,8 +59,8 @@ class ProductionLine(System):
     def _move_to_next_production_line(self, product: Product):
         # a production line either moves the product to the end, or another QA line
         if len(self.qa_check_destinations) == 0:
-            print(
-                f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} STRAIGHT TO EXIT")
+            # print(
+            #     f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} STRAIGHT TO EXIT")
             return
 
         probabilities = self.probabilties
@@ -70,13 +70,13 @@ class ProductionLine(System):
 
         # if got destination of exit, do nothing
         if next_line.name == "exit":
-            print(
-                f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} EXIT probability = {next_line.probability}")
+            # print(
+            #     f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} EXIT probability = {next_line.probability}")
             return
 
         next_line.system.add_product(product=product)
-        print(
-            f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} qa_check={next_line.name} probability = {next_line.probability}")
+        # print(
+        #     f"t = {self.env.now}, ProductionLine line = {self.get_name()} MOVE_TO_CHECK_LINE product = {product.get_name()} qa_check={next_line.name} probability = {next_line.probability}")
 
     def run(self):
         super().run()
@@ -127,8 +127,8 @@ class Dispatcher(System):
             next_line = next_lines[0]
 
             next_line.system.add_product(product=product)
-            print(
-                f"t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE line = {next_line.name} probability = {next_line.probability} product = {product.get_name()}")
+            # print(
+            #     f"t = {self.env.now}, Dispatcher MOVE_TO_PRODUCTION_LINE line = {next_line.name} probability = {next_line.probability} product = {product.get_name()}")
 
         return
 
@@ -181,8 +181,8 @@ class QACheck(System):
 
     def _move_to_next_production_line(self, product: Product):
         if len(self.production_lines_destinations) == 0:
-            print(
-                f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} STRAIGHT TO EXIT")
+            # print(
+            #     f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} STRAIGHT TO EXIT")
             return
 
         next_lines = np.random.choice(
@@ -191,13 +191,13 @@ class QACheck(System):
 
         # if got destination of exit, do nothing
         if next_line.name == "exit":
-            print(
-                f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} EXIST probability = {next_line.probability}")
+            # print(
+            #     f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} EXIST probability = {next_line.probability}")
             return
 
         next_line.system.add_product(product=product)
-        print(
-            f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} production_line = {next_line.name} probability = {next_line.probability}")
+        # print(
+        #     f"t = {self.env.now}, QACheck check = {self.get_name()} MOVE_TO_PRODUCTION_LINE product = {product.get_name()} production_line = {next_line.name} probability = {next_line.probability}")
 
     def run(self):
         super().run()

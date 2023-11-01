@@ -119,23 +119,23 @@ class System:
     def _active(self):
         try:
             active_start = self.env.now
-            print(
-                f"At time t = {active_start}, {self.get_name()} ACTIVE starts")
+            # print(
+            #     f"At time t = {active_start}, {self.get_name()} ACTIVE starts")
 
             yield self.env.timeout(SIM_DURATION)
         except sp.Interrupt:
             active_end = self.env.now
-            print(
-                f"At time t = {active_end}, {self.get_name()} ACTIVE ends")
+            # print(
+            #     f"At time t = {active_end}, {self.get_name()} ACTIVE ends")
 
     def _idle(self):
         try:
             idle_start = self.env.now
-            print(f"At time t = {idle_start}, {self.get_name()} IDLE starts")
+            # print(f"At time t = {idle_start}, {self.get_name()} IDLE starts")
             yield self.env.timeout(SIM_DURATION)
         except sp.Interrupt:
             idle_end = self.env.now
-            print(f"At time t = {idle_end}, {self.get_name()} IDLE ends")
+            # print(f"At time t = {idle_end}, {self.get_name()} IDLE ends")
             self.stats.update_idle_time(idle_time=idle_end - idle_start)
 
     def _calculate_in_queue_wait_time(self):
@@ -161,16 +161,16 @@ class System:
         if not self.is_empty():
             if self.is_available():
                 req = self.available_servers.request()
-                print(
-                    f"{self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
+                # print(
+                #     f"{self.get_name()} servers count = {self.available_servers.count}/{self.available_servers.capacity}")
                 product = self._get_product()
                 self._schedule_update_stats(product=product)
                 return SystemScheduleResult.FOUND_PRODUCT, product, req
             else:
                 return SystemScheduleResult.NO_PRODUCT, None, None
         else:
-            print(
-                f"At time t = {self.env.now}, {self.get_name()} NO_SERVER idle start")
+            # print(
+            #     f"At time t = {self.env.now}, {self.get_name()} NO_SERVER idle start")
             return SystemScheduleResult.NO_SERVER, None, None
 
     def serve(self, product: Product, req: sp.Resource, server: ProductServer) -> sp.Event:

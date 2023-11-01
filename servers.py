@@ -25,13 +25,13 @@ class ProductionLineServer(ProductServer):
         super().__init__()
 
     def process(self, product: Product):
-        print(
-            f"At time t = {self.env.now}, ProductionLineServer RECEIVE product = {product.name}")
+        # print(
+        #     f"At time t = {self.env.now}, ProductionLineServer RECEIVE product = {product.name}")
         service_time = max(1, np.random.exponential(
             self.params.mean_service_time,
         ))
-        print(
-            f"At time t = {self.env.now}, ProductionLineServer START product = {product.name}, duration = {service_time}")
+        # print(
+        #     f"At time t = {self.env.now}, ProductionLineServer START product = {product.name}, duration = {service_time}")
         yield self.env.timeout(service_time)
 
     def stop(self):
@@ -48,13 +48,13 @@ class QACheckServer(ProductServer):
         super().__init__()
 
     def process(self, product: Product):
-        print(
-            f"At time t = {self.env.now}, QACheckServer RECEIVE product = {product.name}")
+        # print(
+        #     f"At time t = {self.env.now}, QACheckServer RECEIVE product = {product.name}")
         service_time = max(1, np.random.exponential(
             self.params.mean_service_time,
         ))
-        print(
-            f"At time t = {self.env.now}, QACheckServer START product = {product.name}, duration = {service_time}")
+        # print(
+        #     f"At time t = {self.env.now}, QACheckServer START product = {product.name}, duration = {service_time}")
         yield self.env.timeout(service_time)
 
     def stop(self):
@@ -68,18 +68,18 @@ class DispatcherServer(ProductServer):
 
     
     def process(self, product: Product):
-        print(
-            f"At time t = {self.env.now}, DispatcherServer RECEIVE product = {product.name}")
+        # print(
+        #     f"At time t = {self.env.now}, DispatcherServer RECEIVE product = {product.name}")
 
         service_time = max(1, np.random.exponential(self.params.mean_service_time))
         
-        print(
-            f"At time t = {self.env.now}, DispatcherServer START product = {product.name}, duration = {service_time}")
+        # print(
+        #     f"At time t = {self.env.now}, DispatcherServer START product = {product.name}, duration = {service_time}")
         
         yield self.env.timeout(service_time)
         
-        print(
-            f"At time t = {self.env.now}, DispatcherServer FINISH product = {product.name}")
+        # print(
+        #     f"At time t = {self.env.now}, DispatcherServer FINISH product = {product.name}")
 
     def stop(self):
         return

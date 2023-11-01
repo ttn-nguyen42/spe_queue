@@ -65,7 +65,7 @@ class Generator:
             interarrival = np.random.exponential(
                 self.params.mean_interarrival_time)
             yield self.env.timeout(interarrival)
-            print(f"At time t = {self.env.now}, Generate NEW_PRODUCT")
+            # print(f"At time t = {self.env.now}, Generate NEW_PRODUCT")
             self.stats.update_interarrival_time(last_time=interarrival)
             self.stats.add_total_generated()
 
@@ -311,6 +311,5 @@ class Factory:
 
 if __name__ == "__main__":
     workload_path = str(sys.argv[1])
-    print(workload_path)
     ms = Factory(workload_path=workload_path,config_path="./config.json")
     ms.open()
